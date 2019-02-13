@@ -1,4 +1,4 @@
-name: TEMPLATE-docs
+name: xarray_mongodb-docs
 channels:
   # conda-forge and readthedocs are hosted by the same cloud provider, so
   # using conda-forge instead of anaconda speeds the download up and prevents
@@ -8,4 +8,7 @@ dependencies:
   - python=3.6
   - sphinx
   - sphinx_rtd_theme
-  # TODO: add any dependencies needed to import the project modules
+  - pymongo
+  - motor
+  - xarray
+  - dask

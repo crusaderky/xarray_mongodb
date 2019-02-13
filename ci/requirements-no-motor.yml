@@ -2,11 +2,10 @@ name: test_env
 channels:
   - anaconda
 dependencies:
-  - python=3.6
+  - python=3.7
   - pytest
   - coveralls
   - pytest-cov
   - pymongo
-  - motor
   - xarray
   - dask

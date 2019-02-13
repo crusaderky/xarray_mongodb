@@ -6,7 +6,7 @@ dependencies:
   - pytest
   - coveralls
   - pytest-cov
-  # TODO: add your own dependencies (no version)
-  # - dep1
-  # - pip:
-  #   - dep2
+  - pymongo
+  - motor
+  - xarray
+  - dask

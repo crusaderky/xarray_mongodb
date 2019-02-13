@@ -18,9 +18,9 @@ Time required: about an hour.
       python setup.py sdist
  8. Use twine to register and upload the release on pypi. Be careful, you can't
     take this back!
-      twine upload dist/TEMPLATE-0.X.Y*
+      twine upload dist/xarray_mongodb-0.X.Y*
     You will need to be listed as a package owner at
-    https://pypi.python.org/pypi/TEMPLATE for this to work.
+    https://pypi.python.org/pypi/xarray_mongodb for this to work.
  9. Push your changes to master:
       git push origin master
       git push origin --tags
@@ -40,13 +40,13 @@ Time required: about an hour.
       git commit -a -m 'Revert to dev version'
       git push origin master
     You're done pushing to master!
-13. Issue the release on GitHub. Open https://github.com/TODO/TEMPLATE/releases;
+13. Issue the release on GitHub. Open https://github.com/AmphoraInc/xarray_mongodb/releases;
     the new release should have automatically appeared. Otherwise, click on
     "Draft a new release" and paste in the latest from whats-new.rst.
-14. Update the docs. Login to https://readthedocs.org/projects/TEMPLATE/versions/
+14. Update the docs. Login to https://readthedocs.org/projects/xarray_mongodb/versions/
     and switch your new release tag (at the bottom) from "Inactive" to "Active".
     It should now build automatically.
-15. Update conda-forge. Clone https://github.com/conda-forge/TEMPLATE-feedstock
+15. Update conda-forge. Clone https://github.com/conda-forge/xarray_mongodb-feedstock
     and update the version number and sha256 in meta.yaml. (On OS X, you can
-    calculate sha256 with `shasum -a 256 TEMPLATE-0.X.Y.tar.gz`). Submit a pull
+    calculate sha256 with `shasum -a 256 xarray_mongodb-0.X.Y.tar.gz`). Submit a pull
     request (and merge it, once CI passes).

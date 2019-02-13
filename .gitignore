@@ -53,7 +53,7 @@ dask-worker-space/
 Icon*
 
 .ipynb_checkpoints
-TEMPLATE/version.py
+xarray_mongodb/version.py
 
 doc/_build
 _build

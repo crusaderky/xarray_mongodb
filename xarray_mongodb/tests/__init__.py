@@ -1,5 +1,4 @@
 import importlib
-from distutils.version import LooseVersion
 import pytest
 
 
@@ -28,13 +27,11 @@ def _import_or_skip(modname, minversion=None):
         has = True
     except ImportError:
         has = False
-    if (has and minversion
-            and LooseVersion(mod.__version__) < LooseVersion(minversion)):
+    if has and minversion and mod.version < minversion:
         has = False
 
     func = pytest.mark.skipif(not has, reason=reason)
     return has, func
 
 
-# TODO: optional dependencies here
-has_numpy, requires_numpy = _import_or_skip('numpy')
+has_motor, requires_motor = _import_or_skip('motor', '2.0')
