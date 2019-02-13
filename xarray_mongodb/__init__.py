@@ -6,3 +6,20 @@ except ImportError:  # pragma: no cover
                       'create a new virtual environment (using conda or '
                       'virtualenv) and then install it in-place by running: '
                       'pip install -e .')
+
+
+from .errors import DocumentNotFoundError  # noqa: F401
+from .sync import XarrayMongoDB  # noqa: F401
+
+try:
+    import motor
+    if motor.version < '2.0.0':
+        raise ImportError()
+except ImportError:
+    # Define stub so that the user gets a nice exception message when he tries
+    # using the class
+    class XarrayMongoDBAsyncIO:
+        def __init__(self, *args, **kwargs):
+            raise ImportError('Requires motor >= 2.0')
+else:
+    from .asyncio import XarrayMongoDBAsyncIO  # noqa: F401

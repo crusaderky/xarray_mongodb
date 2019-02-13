@@ -1,19 +1,14 @@
 xarray_mongodb: Store xarray objects on MongoDB
 ===============================================
 
+TODO tutorial
+
+
 .. toctree::
 
    installing
    whats-new
-
-API Reference
--------------
-
-TODO your own documents here
-
-.. toctree::
-
-   api/helloworld
+   api
 
 License
 -------
