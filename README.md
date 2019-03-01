@@ -2,6 +2,6 @@ xarray_mongodb
 ========
 Store xarray objects in MongoDB
 
-TODO
+TODO readthedocs link
 
  

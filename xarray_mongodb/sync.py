@@ -1,10 +1,12 @@
 """synchronous driver based on PyMongo
 """
 from typing import Union, Tuple, Sequence
-from pymongo.database import Database
-from xarray import DataArray, Dataset
-from bson.objectid import ObjectId
+
+import bson
+import pymongo.database
+import xarray
 from dask.delayed import Delayed
+
 from .common import (XarrayMongoDBCommon,
                      CHUNK_SIZE_BYTES_DEFAULT, CHUNKS_INDEX, CHUNKS_PROJECT)
 from .errors import DocumentNotFoundError
@@ -24,17 +26,24 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         Size of the payload in a document in the chunks collection.
         Not to be confused with dask chunks.
     """
-
-    def __init__(self, db: Database,
+    def __init__(self, db: pymongo.database.Database,
                  collection: str = 'xarray',
                  chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT):
         super().__init__(db, collection, chunk_size_bytes)
-        self.chunks.create_index(CHUNKS_INDEX)
+        self._has_index = False
 
-    def put(self, x: Union[DataArray, Dataset]) -> Tuple[ObjectId, Delayed]:
-        """Write an xarray object to MongoDB.
-        Variables that are backed by dask are not computed;
-        instead their insertion in the database is delayed.
+    async def _create_index(self):
+        """Create the index on the 'chunk' collection
+        on the first get() or put()
+        """
+        if not self._has_index:
+            self.chunks.create_index(CHUNKS_INDEX)
+            self._has_index = True
+
+    def put(self, x: Union[xarray.DataArray, xarray.Dataset]
+            ) -> Tuple[bson.ObjectId, Union[Delayed, None]]:
+        """Write an xarray object to MongoDB. Variables that are backed by dask
+        are not computed; instead their insertion in the database is delayed.
         All other variables are immediately inserted.
 
         :param x:
@@ -43,42 +52,44 @@ class XarrayMongoDB(XarrayMongoDBCommon):
             Tuple of:
 
             - MongoDB _id of the inserted object
-            - :class:`~dask.delayed.Delayed`,
-              or None if none of the variables use dask.
+            - dask future, or None if there are no variables using dask.
         """
+        self._create_index()
         meta = self._dataset_to_meta(x)
         _id = self.meta.insert_one(meta).inserted_id
-        chunks, delayed = self._dataset_to_chunks(
-            x, _id)
+        chunks, delayed = self._dataset_to_chunks(x, _id)
         self.chunks.insert_many(chunks)
         return _id, delayed
 
-    def get(self, _id: ObjectId, load: Union[bool, None, Sequence[str]]
-            ) -> Union[DataArray, Dataset]:
+    def get(self, _id: bson.ObjectId,
+            load: Union[bool, None, Sequence[str]] = None
+            ) -> Union[xarray.DataArray, xarray.Dataset]:
         """Read an xarray object back from MongoDB
 
         :param :class:`~bson.objectid.ObjectId` _id:
-            MongoDB object ID, as returned by
-            :meth:`~MongoXarray.put`
+            MongoDB object ID, as returned by :meth:`put`
+
         :param load:
             Determines which variables to load immediately
             and which instead delay loading with dask. Must be one of:
 
-            None
+            None (default)
                 Match whatever was stored with put()
             True
                 Immediately load all variables into memory.
                 dask chunk information, if any, will be discarded.
             False
-                Only load index variables in memory; delay the
-                loading of everything else with dask.
+                Only load indices in memory; delay the loading of everything
+                else with dask.
             sequence of str
                 variable names that must be immediately loaded into
-                memory. Regardless of this, indices will always be loaded.
+                memory. Regardless of this, indices are always loaded.
+
         :returns:
             :class:`xarray.DataArray` or :class:`xarray.Dataset`
+
         :raises DocumentNotFoundError:
-            id_ not found in the MongoDB 'meta' collection, or one or more
+            _id not found in the MongoDB 'meta' collection, or one or more
             chunks are missing in the 'chunks' collection.
             This error typically happens when:
 
@@ -95,6 +106,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         - you pass load=None or load=False
         - the output of get() is computed after the output of put() is computed
         """
+        self._create_index()
         meta = self.meta.find_one({'_id': _id})
         if not meta:
             raise DocumentNotFoundError(_id)

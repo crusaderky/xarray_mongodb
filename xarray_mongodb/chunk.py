@@ -15,43 +15,22 @@ clients = {}
 clients_lock = RLock()
 
 
-def mongo_client(address: str) -> pymongo.MongoClient:
-    """Connect to MongoDB. Keep a process-local, thread-safe
-    cache of already opened connections.
-    """
-    try:
-        return clients[address]
-    except KeyError:
-        pass
-
-    # Cache miss
-    with clients_lock:
-        try:
-            return clients[address]
-        except KeyError:
-            client = pymongo.MongoClient(address)
-            clients[address] = client
-            return client
-
-
 def mongodb_put_array(array: np.ndarray,
-                      address: str, db: str, collection: str,
+                      coll: pymongo.collection.Collection,
                       meta_id: ObjectId, name: str,
                       chunk: tuple, chunk_size_bytes: int) -> None:
     """Insert a single chunk into MongoDB
     """
-    coll = mongo_client(address)[db][collection]
     coll.insert_many(array_to_docs(
         array, meta_id=meta_id, name=name, chunk=chunk,
         chunk_size_bytes=chunk_size_bytes))
 
 
-def mongodb_get_array(address: str, db: str, collection: str,
+def mongodb_get_array(coll: pymongo.collection.Collection,
                       meta_id: ObjectId, name: str,
                       chunk: Union[tuple, None]) -> np.ndarray:
     """Insert a single chunk into MongoDB
     """
-    coll = mongo_client(address)[db][collection]
     find_key = {'meta_id': meta_id, 'name': name, 'chunk': chunk}
     docs = list(coll.find(
         find_key,
@@ -66,7 +45,7 @@ def array_to_docs(array: np.ndarray, meta_id: ObjectId, name: str,
     """Convert a numpy array to a list of MongoDB documents ready to be
     inserted into the 'chunks' collection
     """
-    buffer = array.tobuffer()
+    buffer = array.tobytes()
     return [
         {
             'meta_id': meta_id,
@@ -75,7 +54,7 @@ def array_to_docs(array: np.ndarray, meta_id: ObjectId, name: str,
             'n': n,
             'dtype': array.dtype.str,
             'shape': array.shape,
-            'data': buffer[offset, offset + chunk_size_bytes],
+            'data': buffer[offset:offset + chunk_size_bytes],
         }
         for n, offset in enumerate(range(
             0, len(buffer), chunk_size_bytes))

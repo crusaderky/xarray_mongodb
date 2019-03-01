@@ -3,21 +3,50 @@
 from collections import OrderedDict, defaultdict
 from functools import partial
 from itertools import groupby
-from typing import Union, Sequence, Set
+from typing import Union, List, Tuple, Set, Sequence
 
-from xarray import DataArray, Dataset, Variable
-from bson.objectid import ObjectId
-from dask.array import Array
-from dask.base import tokenize
-from dask.core import flatten
+import bson
+import dask.array
+import dask.base
+import dask.core
+import dask.highlevelgraph
 from dask.delayed import Delayed
-from dask.highlevelgraph import HighLevelGraph
+import numpy
+import pymongo
+import xarray
+
 from . import chunk
+
 
 CHUNKS_INDEX = {'meta_id': 1, 'name': 1, 'chunk': 1}
 CHUNKS_PROJECT = {'name': 1, 'chunk': 1, 'n': 1,
                   'dtype': 1, 'shape': 1, 'data': 1}
 CHUNK_SIZE_BYTES_DEFAULT = 255 * 1024
+
+
+@dask.base.normalize_token.register(pymongo.collection.Collection)
+def _(obj: pymongo.collection.Collection):
+    """Single-dispatch function.
+    Make pymongo collections tokenizable with dask.
+    """
+    client = obj.database.client
+    # See patch_pymongo.py
+    return client.__args, client.__kwargs, obj.database.name, obj.name
+
+
+def ensure_pymongo(obj):
+    """If obj is wrapped by motor, return the internal pymongo object
+
+    :param obj:
+        a pymongo or motor client, database, or collection
+    :returns:
+        pymongo client, database, or collection
+    """
+    if obj.__class__.__module__.startswith('pymongo.'):
+        return obj
+    if not obj.delegate.__class__.__module__.startswith('pymongo.'):
+        raise TypeError('Neither a pymongo nor a motor object')
+    return obj.delegate
 
 
 class XarrayMongoDBCommon:
@@ -35,44 +64,43 @@ class XarrayMongoDBCommon:
         Size of the payload in a document in the chunks collection.
         Not to be confused with dask chunks.
     """
-
-    def __init__(self, db,
-                 collection: str = 'xarray',
+    def __init__(self, db, collection: str = 'xarray',
                  chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT):
         self.meta = db[collection].arrays
         self.chunks = db[collection].chunks
         self.chunk_size_bytes = chunk_size_bytes
 
-    def _dataset_to_meta(self, x: Union[DataArray, Dataset]) -> dict:
+    def _dataset_to_meta(self, x: Union[xarray.DataArray, xarray.Dataset]
+                         ) -> dict:
         """Helper function of put().
         Convert a DataArray or Dataset into the dict
         to insert into the 'meta' collection
         """
         meta = {
-            'attrs': dict(x.attrs),
-            'attrsOrder': list(x.attrs.keys()),
-            'name': getattr(x, 'name', None),
-            'variables': {},
-            'coords': list(x.coords.keys()),
+            'type': x.__class__.__name__,
+            'attrs': bson.SON(x.attrs),
+            'coords': bson.SON(),
+            'data_vars': bson.SON(),
             'chunkSize': self.chunk_size_bytes,
         }
-        if isinstance(x, DataArray):
+        if isinstance(x, xarray.DataArray):
+            x['name'] = x.name
             x = x._to_temp_dataset()
-            meta['type'] = 'DataArray'
-        else:
-            meta['type'] = 'Dataset'
-        meta['data_vars'] = list(x.data_vars.keys())
 
-        for k, v in x.variables.items():
-            meta['variables'][k] = {
-                'dims': v.dims,
-                'dtype': v.dtype.str,
-                'shape': v.shape,
-                'chunks': v.chunks,
-            }
+        for coll in ('coords', 'data_vars'):
+            for k, v in getattr(x, coll).items():
+                meta[coll][k] = {
+                    'dims': v.dims,
+                    'dtype': v.dtype.str,
+                    'shape': v.shape,
+                    'chunks': v.chunks,
+                }
         return meta
 
-    def _dataset_to_chunks(self, x: Union[DataArray, Dataset], id_: ObjectId):
+    def _dataset_to_chunks(
+            self, x: Union[xarray.DataArray, xarray.Dataset],
+            meta_id: bson.ObjectId
+    ) -> Tuple[List[dict], Union[Delayed, None]]:
         """Helper method of put().
         Convert a DataArray or Dataset into the list of dicts
         to insert into the 'chunks' collection. For dask variables,
@@ -80,11 +108,8 @@ class XarrayMongoDBCommon:
 
         :param x:
             :class:`xarray.DataArray` or :class:`xarray.Dataset`
-        :param ObjectId id_:
+        :param bson.ObjectId meta_id:
             id_ of the document in the 'meta' collection
-        :param int chunk_size_bytes:
-            maximum size of the data buffer on the MongoDB 'chunks'
-            collection. Not to be confused with dask chunks.
         :returns:
             tuple of
 
@@ -94,7 +119,7 @@ class XarrayMongoDBCommon:
                 :class:`~dask.delayed.Delayed`, or None if none of the
                 variables use dask.
         """
-        if isinstance(x, DataArray):
+        if isinstance(x, xarray.DataArray):
             x = x._to_temp_dataset()
 
         chunks = []
@@ -104,49 +129,49 @@ class XarrayMongoDBCommon:
             graph = variable.__dask_graph__()
             if graph:
                 delayeds.append(self._delayed_put(
-                    id_, var_name, variable.data))
+                    meta_id, var_name, variable))
             else:
                 chunks += chunk.array_to_docs(
-                    variable.values, meta_id=id_, name=var_name, chunk=None,
-                    chunk_size_bytes=self.chunk_size_bytes)
+                    variable.values, meta_id=meta_id, name=var_name,
+                    chunk=None, chunk_size_bytes=self.chunk_size_bytes)
 
         if delayeds:
-            name = 'mongodb_put_dataset-' + tokenize(delayeds)
+            # Aggregate the delayeds into a single delayed
+            name = 'mongodb_put_dataset-' + dask.base.tokenize(*delayeds)
             dsk = {name: tuple(d.name for d in delayeds)}
-            graph = HighLevelGraph.from_collections(
+            graph = dask.highlevelgraph.HighLevelGraph.from_collections(
                 name, dsk, dependencies=delayeds)
             return chunks, Delayed(name, graph)
         return chunks, None
 
-    def _delayed_put(self, meta_id: ObjectId, var_name: str,
-                     array: Array) -> Delayed:
+    def _delayed_put(self, meta_id: bson.ObjectId, var_name: str,
+                     var: xarray.Variable) -> Delayed:
         """Helper method of put().
-        Convert a dask Variable into a delayed put into the
+        Convert a dask-based Variable into a delayed put into the
         chunks collection.
         """
-        name = 'mongodb_put_array-' + tokenize(array)
+        coll = ensure_pymongo(self.chunks)
+        name = 'mongodb_put_array-' + dask.base.tokenize(
+            coll, meta_id, var_name, var)
         dsk = {}
-        for arr_k in flatten(array.__dask_keys__()):
+
+        for arr_k in dask.core.flatten(var.__dask_keys__()):
             put_k = (name,) + arr_k[1:]
             put_func = partial(
                 chunk.mongodb_put_array,
-                address=self.chunks.db.client.address,
-                db=self.chunks.db.name,
-                collection=self.chunks.name,
-                meta_id=meta_id,
-                name=var_name,
-                chunk=arr_k[1:],
+                coll=coll, meta_id=meta_id, name=var_name, chunk=arr_k[1:],
                 chunk_size_bytes=self.chunk_size_bytes)
             dsk[put_k] = put_func, arr_k
+
         dsk[name] = tuple(sorted(dsk.keys()))
-        graph = HighLevelGraph.from_collections(
-            name, dsk, dependencies=[array])
+        graph = dask.highlevelgraph.HighLevelGraph.from_collections(
+            name, dsk, dependencies=[var])
         return Delayed(name, graph)
 
     @staticmethod
     def _normalize_load(meta: dict, load: Union[bool, None, Sequence[str]]
-                        ) -> set:
-        """Helper function of get().
+                        ) -> Set[str]:
+        """Helper method of get().
         Normalize the 'load' parameter of get().
 
         :param dict meta:
@@ -157,15 +182,12 @@ class XarrayMongoDBCommon:
         :returns:
             set of variable names to be loaded
         """
-        all_vars = set(meta['variables'].keys())
-        index_coords = {
-            k for k, v in meta['variables'].items()
-            if v['dims'] == [k]
-        }
-        numpy_vars = {
-            k for k, v in meta['variables'].items()
-            if v['chunks'] is None
-        }
+        variables = dict(meta['coords'])
+        variables |= meta['data_vars']
+
+        all_vars = set(variables.keys())
+        index_coords = {k for k, v in variables.items() if v['dims'] == [k]}
+        numpy_vars = {k for k, v in variables.items() if v['chunks'] is None}
 
         if load is True:
             return all_vars
@@ -177,7 +199,7 @@ class XarrayMongoDBCommon:
 
     @staticmethod
     def _chunks_query(meta: dict, load: Set[str]) -> dict:
-        """Helper function of get().
+        """Helper method of get().
 
         :param dict meta:
             document from the 'meta' collection
@@ -189,81 +211,104 @@ class XarrayMongoDBCommon:
         """
         return {'meta_id': meta['_id'], 'name': {'$in': list(load)}}
 
-    def _docs_to_dataset(self, meta: dict, chunks: Sequence[dict],
+    def _docs_to_dataset(self, meta: dict, chunks: List[dict],
                          load: Set[str]
-                         ) -> Union[DataArray, Dataset]:
-        """Convert a document dicts loaded from MongoDB to either a DataArray
-        or a Dataset
+                         ) -> Union[xarray.DataArray, xarray.Dataset]:
+        """Helper method of get().
+        Convert a document dicts loaded from MongoDB to either a DataArray
+        or a Dataset.
         """
-        chunks.sort(lambda doc: (doc['name'], doc['chunk'], doc['n']))
+        chunks.sort(key=lambda doc: (doc['name'], doc['chunk'], doc['n']))
 
         # Convert list of docs into {var name: {chunk: numpy array}}
         variables = defaultdict(dict)
-        for (name, chunk_id), docs in groupby(
+        for (var_name, chunk_id), docs in groupby(
                 chunks, lambda doc: (doc['name'], doc['chunk'])):
             if isinstance(chunk_id, list):
                 chunk_id = tuple(chunk_id)
             array = chunk.docs_to_array(
                 list(docs),
-                {'meta_id': meta['_id'], 'name': name, 'chunk': chunk_id})
-            variables[name][chunk_id] = array
+                {'meta_id': meta['_id'], 'name': var_name, 'chunk': chunk_id})
+            variables[var_name][chunk_id] = array
 
-        # Convert {chunk id: ndarray} to xarray.Variable
-        for var_name, var_meta in meta['variables'].items():
-            if var_name in load:
-                chunks_dict = variables[var_name]
-                # Convert to numpy.ndarray
-                if var_meta['chunks'] is None:
-                    assert len(chunks_dict) == 1
-                    # chunks=None or single chunk
-                    array = next(iter(chunks_dict.values()))
+        def build_variables(where: str):
+            for var_name, var_meta in meta[where].items():
+                if var_name in load:
+                    assert var_name in variables
+                    array = self._build_numpy_array(
+                        var_meta, variables[var_name])
                 else:
-                    # variable was backed by dask and split in multiple chunks
-                    # at the moment of calling put()
-                    dsk = {
-                        ('stub',) + chunk_id: array
-                        for chunk_id, array in chunks_dict.items()
-                    }
-                    array = Array(dsk, name='stub', shape=var_meta['shape'],
-                                  chunks=var_meta['chunks'],
-                                  dtype=var_meta['dtype'])
-                    array = array.compute(scheduler='sync')
-            else:
-                assert var_name not in variables
-                # Convert to dask.array.Array
-                dsk_name = 'mongodb_get_array-' + tokenize(
-                    address=self.chunks.db.client.address,
-                    db=self.chunks.db.name,
-                    collection=self.chunks.name,
-                    meta_id=meta['_id'],
-                    name=var_name)
-                array = Array({}, name=dsk_name, shape=var_meta['shape'],
-                              chunks=var_meta['chunks'] or -1,
-                              dtype=var_meta['dtype'])
-                for key in flatten(array.__dask_keys__()):
-                    load_func = partial(
-                        chunk.mongodb_get_array,
-                        address=self.chunks.db.client.address,
-                        db=self.chunks.db.name,
-                        collection=self.chunks.name,
-                        meta_id=meta['_id'],
-                        name=var_name,
-                        chunk=key[1:])
-                    # See dask.highlevelgraph.HighLevelGraph
-                    array.dask.layers[dsk_name][key] = load_func
+                    assert var_name not in variables
+                    array = self._build_dask_array(
+                        var_meta, var_name, meta['_id'])
+                yield var_name, xarray.Variable(var_meta['dims'], array)
 
-            variables[var_name] = Variable(var_meta['dims'], array)
-
-        ds = Dataset(
-            coords=OrderedDict(
-                (k, variables[k]) for k in meta['coords']),
-            data_vars=OrderedDict(
-                (k, variables[k]) for k in meta['data_vars']),
-            attrs=OrderedDict(
-                (k, meta['attrs'][k]) for k in meta['attrsOrder']))
+        ds = xarray.Dataset(
+            coords=OrderedDict(build_variables('coords')),
+            data_vars=OrderedDict(build_variables('data_vars')),
+            attrs=OrderedDict(meta['attrs']))
 
         if meta['type'] == 'DataArray':
             assert len(ds.data_vars) == 1
             ds = next(iter(ds.data_vars.values()))
             ds.name = meta['name']
         return ds
+
+    @staticmethod
+    def _build_numpy_array(meta: dict, chunks: dict) -> numpy.ndarray:
+        """Build a numpy array from meta-data and chunks
+
+        :param dict meta:
+            sub-document from the 'meta' collection under the
+            'coords' or 'data_vars' key
+        :param dict chunks:
+            ``{chunk id: numpy.ndarray}`` where chunk id is a tuple e.g.
+            ``(0, 0, 0)`` if the variable was backed by dask when it was
+            stored, or None if it was backed by numpy.
+        """
+        # Convert to numpy.ndarray
+        if meta['chunks'] is None:
+            assert len(chunks) == 1
+            # chunks=None or single chunk
+            return next(iter(chunks.values()))
+
+        # variable was backed by dask and split in multiple chunks
+        # at the moment of calling put()
+        dsk = {
+            ('stub',) + chunk_id: array
+            for chunk_id, array in chunks.items()
+        }
+        array = dask.array.Array(
+            dsk, name='stub', shape=meta['shape'],
+            chunks=meta['chunks'], dtype=meta['dtype'])
+        return array.compute(scheduler='sync')
+
+    def _build_dask_array(self, meta: dict, name: str, meta_id: bson.ObjectId
+                          ) -> dask.array.Array:
+        """Build a dask array from meta-data
+
+        :param dict meta:
+            sub-document from the 'meta' collection under the
+            'coords' or 'data_vars' key
+        :param str name:
+            variable name
+        :param bson.ObjectId meta_id:
+            Id of the document from the 'meta' collection
+        """
+        coll = ensure_pymongo(self.chunks)
+        dsk_name = 'mongodb_get_array-' + dask.base.tokenize(
+            coll, meta_id, name)
+
+        array = dask.array.Array(
+            {}, name=dsk_name, shape=meta['shape'],
+            chunks=meta['chunks'] or -1, dtype=meta['dtype'])
+
+        for key in dask.core.flatten(array.__dask_keys__()):
+            load_func = partial(
+                chunk.mongodb_get_array,
+                coll=coll, meta_id=meta_id, name=name,
+                chunk=key[1:] if meta['chunks'] is not None else None)
+
+            # See dask.highlevelgraph.HighLevelGraph
+            array.dask.layers[dsk_name][key] = load_func
+        return array

@@ -2,5 +2,9 @@ API Reference
 =============
 
 .. autoclass:: xarray_mongodb.XarrayMongoDB
+   :members:
+
 .. autoclass:: xarray_mongodb.XarrayMongoDBAsyncIO
-.. autoclass:: xarray_mongodb.DocumentNotFoundError
+   :members:
+
+.. autoexception:: xarray_mongodb.DocumentNotFoundError
