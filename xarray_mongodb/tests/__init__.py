@@ -1,4 +1,5 @@
 import importlib
+import uuid
 import pytest
 
 
@@ -35,3 +36,25 @@ def _import_or_skip(modname, minversion=None):
 
 
 has_motor, requires_motor = _import_or_skip('motor', '2.0')
+
+
+@pytest.fixture
+def xdb():
+    import pymongo
+    from xarray_mongodb import XarrayMongoDB
+
+    client = pymongo.MongoClient()
+    dbname = 'test_xarray_mongodb-%s' % uuid.uuid4()
+    yield XarrayMongoDB(client[dbname])
+    client.drop_database(dbname)
+
+
+@pytest.fixture
+def xdb_async():
+    import motor.motor_asyncio
+    from xarray_mongodb import XarrayMongoDBAsyncIO
+
+    client = motor.motor_asyncio.AsyncIOMotorClient()
+    dbname = 'test_xarray_mongodb-%s' % uuid.uuid4()
+    yield XarrayMongoDBAsyncIO(client[dbname])
+    client.drop_database(dbname)

@@ -46,8 +46,9 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         meta = self._dataset_to_meta(x)
         _id = (await self.meta.insert_one(meta)).inserted_id
         chunks, delayed = self._dataset_to_chunks(x, _id)
-        await asyncio.gather(index_task,
-                             self.chunks.insert_many(chunks))
+        if chunks:
+            await self.chunks.insert_many(chunks)
+        await index_task
         return _id, delayed
 
     async def get(self, _id: bson.ObjectId,
@@ -63,7 +64,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         load = self._normalize_load(meta, load)
         chunks_query = self._chunks_query(meta, load)
 
-        chunks, _ = await asyncio.gather(
-            index_task,
-            self.chunks.find(chunks_query, CHUNKS_PROJECT).tolist())
+        chunks, _ = await self.chunks.find(
+            chunks_query, CHUNKS_PROJECT).tolist()
+        await index_task
         return self._docs_to_dataset(meta, chunks, load)

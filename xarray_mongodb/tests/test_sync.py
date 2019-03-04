@@ -1,18 +1,8 @@
 import bson
-import pymongo
 import pytest
 import xarray
-from xarray_mongodb import XarrayMongoDB
-
-
-@pytest.fixture
-def xdb():
-    client = pymongo.MongoClient()
-    client.drop_database('test_xarray_mongodb')
-    db = client['test_xarray_mongodb']
-    xdb = XarrayMongoDB(db)
-    yield xdb
-    client.drop_database('test_xarray_mongodb')
+from xarray_mongodb import DocumentNotFoundError
+from . import xdb  # noqa: F401
 
 
 ds = xarray.Dataset(
@@ -32,7 +22,7 @@ ds['d'] = ds['d'].chunk({'x': 1, 'y': 2})
 ds['x3'] = ds['x3'].chunk(1)
 
 
-@pytest.mark.parametrize('compute,load,chunks', [
+@pytest.mark.parametrize('compute,load,chunks', [  # noqa: F811
     (False, None, {'x': None, 'x2': None,
                    'x3': ((1, 1), ), 'd': ((1, 1, ), (2, )), 's': None}),
     (False, False, {'x': None, 'x2': ((2, ), ),
@@ -68,3 +58,15 @@ def test_roundtrip(xdb, compute, load, chunks):
     assert {
         k: v.chunks for k, v in ds2.variables.items()
     } == chunks
+
+
+def test_meta_not_found(xdb):  # noqa: F811
+    with pytest.raises(DocumentNotFoundError):
+        xdb.get(bson.ObjectId('deadbeef' * 3))
+
+
+def test_chunks_not_found(xdb):  # noqa: F811
+    _id, _ = xdb.put(ds)
+    ds2 = xdb.get(_id)
+    with pytest.raises(DocumentNotFoundError):
+        ds2.compute()

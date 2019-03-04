@@ -21,9 +21,11 @@ def mongodb_put_array(array: np.ndarray,
                       chunk: tuple, chunk_size_bytes: int) -> None:
     """Insert a single chunk into MongoDB
     """
-    coll.insert_many(array_to_docs(
+    docs = array_to_docs(
         array, meta_id=meta_id, name=name, chunk=chunk,
-        chunk_size_bytes=chunk_size_bytes))
+        chunk_size_bytes=chunk_size_bytes)
+    assert docs
+    coll.insert_many(docs)
 
 
 def mongodb_get_array(coll: pymongo.collection.Collection,

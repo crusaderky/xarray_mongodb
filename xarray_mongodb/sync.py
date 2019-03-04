@@ -58,7 +58,8 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         meta = self._dataset_to_meta(x)
         _id = self.meta.insert_one(meta).inserted_id
         chunks, delayed = self._dataset_to_chunks(x, _id)
-        self.chunks.insert_many(chunks)
+        if chunks:
+            self.chunks.insert_many(chunks)
         return _id, delayed
 
     def get(self, _id: bson.ObjectId,
