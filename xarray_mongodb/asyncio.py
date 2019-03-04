@@ -35,7 +35,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         on the first get() or put()
         """
         if not self._has_index:
-            await self.chunks.create_index(CHUNKS_INDEX)
+            await self.chunks.create_index(CHUNKS_INDEX, background=True)
             self._has_index = True
 
     async def put(self, x: Union[xarray.DataArray, xarray.Dataset]

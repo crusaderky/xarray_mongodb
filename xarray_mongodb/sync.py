@@ -32,12 +32,12 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         super().__init__(db, collection, chunk_size_bytes)
         self._has_index = False
 
-    async def _create_index(self):
+    def _create_index(self):
         """Create the index on the 'chunk' collection
         on the first get() or put()
         """
         if not self._has_index:
-            self.chunks.create_index(CHUNKS_INDEX)
+            self.chunks.create_index(CHUNKS_INDEX, background=True)
             self._has_index = True
 
     def put(self, x: Union[xarray.DataArray, xarray.Dataset]

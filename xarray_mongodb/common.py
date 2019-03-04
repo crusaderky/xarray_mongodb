@@ -3,7 +3,7 @@
 from collections import OrderedDict, defaultdict
 from functools import partial
 from itertools import groupby
-from typing import Union, List, Tuple, Set, Sequence
+from typing import List, Tuple, Set, Sequence, Union
 
 import bson
 import dask.array
@@ -18,7 +18,7 @@ import xarray
 from . import chunk
 
 
-CHUNKS_INDEX = {'meta_id': 1, 'name': 1, 'chunk': 1}
+CHUNKS_INDEX = [('meta_id', 1), ('name', 1), ('chunk', 1)]
 CHUNKS_PROJECT = {'name': 1, 'chunk': 1, 'n': 1,
                   'dtype': 1, 'shape': 1, 'data': 1}
 CHUNK_SIZE_BYTES_DEFAULT = 255 * 1024
@@ -32,21 +32,6 @@ def _(obj: pymongo.collection.Collection):
     client = obj.database.client
     # See patch_pymongo.py
     return client.__args, client.__kwargs, obj.database.name, obj.name
-
-
-def ensure_pymongo(obj):
-    """If obj is wrapped by motor, return the internal pymongo object
-
-    :param obj:
-        a pymongo or motor client, database, or collection
-    :returns:
-        pymongo client, database, or collection
-    """
-    if obj.__class__.__module__.startswith('pymongo.'):
-        return obj
-    if not obj.delegate.__class__.__module__.startswith('pymongo.'):
-        raise TypeError('Neither a pymongo nor a motor object')
-    return obj.delegate
 
 
 class XarrayMongoDBCommon:
@@ -77,15 +62,14 @@ class XarrayMongoDBCommon:
         to insert into the 'meta' collection
         """
         meta = {
-            'type': x.__class__.__name__,
             'attrs': bson.SON(x.attrs),
             'coords': bson.SON(),
             'data_vars': bson.SON(),
             'chunkSize': self.chunk_size_bytes,
         }
         if isinstance(x, xarray.DataArray):
-            x['name'] = x.name
-            x = x._to_temp_dataset()
+            meta['name'] = x.name
+            x = x.to_dataset(name='__DataArray__')
 
         for coll in ('coords', 'data_vars'):
             for k, v in getattr(x, coll).items():
@@ -120,53 +104,67 @@ class XarrayMongoDBCommon:
                 variables use dask.
         """
         if isinstance(x, xarray.DataArray):
-            x = x._to_temp_dataset()
+            x = x.to_dataset(name='__DataArray__')
 
+        # MongoDB documents to be inserted in the 'chunks' collection
         chunks = []
-        delayeds = []
+
+        # Building blocks of the dask graph
+        keys = []
+        layers = {}
+        dependencies = {}
 
         for var_name, variable in x.variables.items():
             graph = variable.__dask_graph__()
             if graph:
-                delayeds.append(self._delayed_put(
-                    meta_id, var_name, variable))
+                put_keys, put_graph = self._delayed_put(
+                    meta_id, var_name, variable)
+                keys += put_keys
+                layers.update(put_graph.layers)
+                dependencies.update(put_graph.dependencies)
             else:
                 chunks += chunk.array_to_docs(
                     variable.values, meta_id=meta_id, name=var_name,
                     chunk=None, chunk_size_bytes=self.chunk_size_bytes)
 
-        if delayeds:
+        if keys:
+            # Build dask Delayed
+            toplevel_name = 'mongodb_put_dataset-' + dask.base.tokenize(*keys)
+            layers[toplevel_name] = {toplevel_name: (collect, ) + tuple(keys)}
+            dependencies[toplevel_name] = {key[0] for key in keys}
             # Aggregate the delayeds into a single delayed
-            name = 'mongodb_put_dataset-' + dask.base.tokenize(*delayeds)
-            dsk = {name: tuple(d.name for d in delayeds)}
-            graph = dask.highlevelgraph.HighLevelGraph.from_collections(
-                name, dsk, dependencies=delayeds)
-            return chunks, Delayed(name, graph)
+            graph = dask.highlevelgraph.HighLevelGraph(
+                layers=layers, dependencies=dependencies)
+            return chunks, Delayed(toplevel_name, graph)
         return chunks, None
 
     def _delayed_put(self, meta_id: bson.ObjectId, var_name: str,
-                     var: xarray.Variable) -> Delayed:
+                     var: xarray.Variable
+                     ) -> Tuple[List, dask.highlevelgraph.HighLevelGraph]:
         """Helper method of put().
         Convert a dask-based Variable into a delayed put into the
         chunks collection.
+
+        :returns: tuple of dask keys, layers, dependencies
         """
         coll = ensure_pymongo(self.chunks)
         name = 'mongodb_put_array-' + dask.base.tokenize(
             coll, meta_id, var_name, var)
         dsk = {}
+        keys = []
 
         for arr_k in dask.core.flatten(var.__dask_keys__()):
-            put_k = (name,) + arr_k[1:]
+            put_k = (name, ) + arr_k[1:]
             put_func = partial(
                 chunk.mongodb_put_array,
                 coll=coll, meta_id=meta_id, name=var_name, chunk=arr_k[1:],
                 chunk_size_bytes=self.chunk_size_bytes)
             dsk[put_k] = put_func, arr_k
+            keys.append(put_k)
 
-        dsk[name] = tuple(sorted(dsk.keys()))
         graph = dask.highlevelgraph.HighLevelGraph.from_collections(
             name, dsk, dependencies=[var])
-        return Delayed(name, graph)
+        return keys, graph
 
     @staticmethod
     def _normalize_load(meta: dict, load: Union[bool, None, Sequence[str]]
@@ -183,7 +181,7 @@ class XarrayMongoDBCommon:
             set of variable names to be loaded
         """
         variables = dict(meta['coords'])
-        variables |= meta['data_vars']
+        variables.update(meta['data_vars'])
 
         all_vars = set(variables.keys())
         index_coords = {k for k, v in variables.items() if v['dims'] == [k]}
@@ -248,9 +246,8 @@ class XarrayMongoDBCommon:
             data_vars=OrderedDict(build_variables('data_vars')),
             attrs=OrderedDict(meta['attrs']))
 
-        if meta['type'] == 'DataArray':
-            assert len(ds.data_vars) == 1
-            ds = next(iter(ds.data_vars.values()))
+        if meta['data_vars'].keys() == {'__DataArray__'}:
+            ds = ds['__DataArray__']
             ds.name = meta['name']
         return ds
 
@@ -280,7 +277,7 @@ class XarrayMongoDBCommon:
         }
         array = dask.array.Array(
             dsk, name='stub', shape=meta['shape'],
-            chunks=meta['chunks'], dtype=meta['dtype'])
+            chunks=chunks_lists_to_tuples(meta['chunks']), dtype=meta['dtype'])
         return array.compute(scheduler='sync')
 
     def _build_dask_array(self, meta: dict, name: str, meta_id: bson.ObjectId
@@ -299,16 +296,62 @@ class XarrayMongoDBCommon:
         dsk_name = 'mongodb_get_array-' + dask.base.tokenize(
             coll, meta_id, name)
 
+        if meta['chunks'] is None:
+            chunks = -1
+        else:
+            chunks = chunks_lists_to_tuples(meta['chunks'])
+
         array = dask.array.Array(
             {}, name=dsk_name, shape=meta['shape'],
-            chunks=meta['chunks'] or -1, dtype=meta['dtype'])
+            chunks=chunks, dtype=meta['dtype'])
 
         for key in dask.core.flatten(array.__dask_keys__()):
             load_func = partial(
                 chunk.mongodb_get_array,
                 coll=coll, meta_id=meta_id, name=name,
-                chunk=key[1:] if meta['chunks'] is not None else None)
+                chunk=key[1:] if meta['chunks'] else None)
 
             # See dask.highlevelgraph.HighLevelGraph
-            array.dask.layers[dsk_name][key] = load_func
+            array.dask.layers[dsk_name][key] = (load_func, )
         return array
+
+
+def ensure_pymongo(obj):
+    """If obj is wrapped by motor, return the internal pymongo object
+
+    :param obj:
+        a pymongo or motor client, database, or collection
+    :returns:
+        pymongo client, database, or collection
+    """
+    if obj.__class__.__module__.startswith('pymongo.'):
+        return obj
+    if not obj.delegate.__class__.__module__.startswith('pymongo.'):
+        raise TypeError('Neither a pymongo nor a motor object')
+    return obj.delegate
+
+
+def collect(*futures):
+    """Dummy node in the dask graph whose only purpose is to collect
+    a bunch of other nodes
+    """
+    pass
+
+
+def chunks_lists_to_tuples(level: Union[list, int]) -> Union[Tuple, int]:
+    """Convert a recursive list of lists of ints into a tuple of tuples of
+    ints. This is a helper function needed because MongoDB automatically
+    converts tuples to lists, but the dask constructor wants the chunks
+    defined strictly as tuples.
+
+    e.g.
+
+    - input: ``[[1, 2], [3, 4]]``
+    - output: ``((1, 2), (3, 4))``
+    """
+    if isinstance(level, list):
+        return tuple(chunks_lists_to_tuples(i) for i in level)
+    elif isinstance(level, int):
+        return level
+    else:
+        raise TypeError(level)
