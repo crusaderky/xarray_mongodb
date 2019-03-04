@@ -1,12 +1,14 @@
 name: test_env
 channels:
   - anaconda
+  - conda-forge
 dependencies:
   - python=3.6
-  - pytest
   - coveralls
-  - pytest-cov
-  - pymongo
-  - motor
-  - xarray
   - dask
+  - motor
+  - pymongo
+  - pytest
+  - pytest-asyncio >=0.10
+  - pytest-cov
+  - xarray

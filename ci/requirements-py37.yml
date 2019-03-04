@@ -1,13 +1,14 @@
 name: test_env
 channels:
   - anaconda
+  - conda-forge
 dependencies:
   - python=3.7
-  - pytest
   - coveralls
-  - pytest-cov
-  - pymongo
-  - xarray
   - dask
-  - pypi:
-      - motor  # Not available in conda-forge for Python 3.7
+  - motor
+  - pymongo
+  - pytest
+  - pytest-asyncio >=0.10
+  - pytest-cov
+  - xarray

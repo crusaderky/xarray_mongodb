@@ -39,7 +39,8 @@ INSTALL_REQUIRES = [
     'xarray >= 0.10.1',
     'pymongo >= 3.7',
 ]
-TESTS_REQUIRE = ['pytest >= 3.6']
+EXTRAS_REQUIRE = {'motor': ['motor >= 2.0']}
+TESTS_REQUIRE = ['pytest >= 3.6', 'pytest-asyncio >= 0.10']
 
 DESCRIPTION = "xarray_mongodb"
 LONG_DESCRIPTION = """
@@ -128,6 +129,7 @@ setup(name=DISTNAME,
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       install_requires=INSTALL_REQUIRES,
+      extras_require=EXTRAS_REQUIRE,
       tests_require=TESTS_REQUIRE,
       url=URL,
       packages=find_packages(),
