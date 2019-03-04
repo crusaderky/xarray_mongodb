@@ -76,8 +76,9 @@ def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
         raise DocumentNotFoundError(find_key)
     buffer = b''.join([doc['data'] for doc in docs])
     array = np.frombuffer(buffer, docs[0]['dtype'])
+    shape = docs[0]['shape']
     try:
-        return array.reshape(*docs[0]['shape'])
+        return array.reshape(shape)
     except ValueError as e:
         # Missing some chunks
         raise DocumentNotFoundError(find_key) from e

@@ -232,7 +232,7 @@ class XarrayMongoDBCommon:
         def build_variables(where: str):
             for var_name, var_meta in meta[where].items():
                 if var_name in load:
-                    assert var_name in variables
+                    assert var_name in variables, var_name
                     array = self._build_numpy_array(
                         var_meta, variables[var_name])
                 else:
