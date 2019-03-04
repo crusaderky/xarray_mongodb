@@ -44,7 +44,7 @@ script:
     elif [[ "$CONDA_ENV" == "flake8" ]]; then
       flake8;
     else
-      py.test xarray_mongodb --cov=xarray_mongodb --cov-config ci/.coveragerc --cov-report term-missing --verbose $EXTRA_FLAGS;
+      py.test xarray_mongodb;
     fi
 after_success:
   - coveralls
