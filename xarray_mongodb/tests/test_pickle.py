@@ -1,3 +1,11 @@
+"""Test that the pymongo.MongoClient embedded in the dask future can be
+pickled/unpickled and sent over the network to dask distributed.
+
+This requires a monkey-patch to pymongo (patch_pymongo.py) which must be loaded
+by the interpreter BEFORE unpickling the pymongo.MongoClient object. This is
+achieved by always having a function defined by xarray_mongodb before the
+pymongo.MongoClient object in the tuples that constitute the dask graph.
+"""
 import os.path
 import pickle
 import subprocess
@@ -10,7 +18,7 @@ LOAD_PICKLE = os.path.join(os.path.dirname(__file__), 'load_pickle.py')
 
 
 def test_pickle(xdb, tmpdir):  # noqa: F811
-    ds = xarray.Dataset({'d': ('x', [1, 2])}).chunk()
+    ds = xarray.DataArray([1, 2]).chunk()
     _, future = xdb.put(ds)
     assert future is not None
 

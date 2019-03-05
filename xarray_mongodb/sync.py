@@ -16,7 +16,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
     """Synchronous driver for MongoDB to read/write
     xarray objects
 
-    :param db:
+    :param database:
         :class:`pymongo.database.Database`
     :param str collection:
         prefix of the collections to store the xarray data.
@@ -26,10 +26,10 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         Size of the payload in a document in the chunks collection.
         Not to be confused with dask chunks.
     """
-    def __init__(self, db: pymongo.database.Database,
+    def __init__(self, database: pymongo.database.Database,
                  collection: str = 'xarray',
                  chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT):
-        super().__init__(db, collection, chunk_size_bytes)
+        super().__init__(database, collection, chunk_size_bytes)
         self._has_index = False
 
     def _create_index(self):

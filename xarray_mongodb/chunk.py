@@ -77,10 +77,18 @@ def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
     if not docs:
         raise DocumentNotFoundError(find_key)
     buffer = b''.join([doc['data'] for doc in docs])
-    array = np.frombuffer(buffer, docs[0]['dtype'])
+    dtype = docs[0]['dtype']
     shape = docs[0]['shape']
+
+    # In case of a missing chunk,
+    # - if bytes_per_chunk is not an exact multiple of dtype.size,
+    #   np.frombuffer crashes with
+    #   'ValueError: buffer size must be a multiple of element size'
+    # - if bytes_per_chunk is an exact multiple of dtype.size,
+    #   ndarray.reshape crashes with
+    #   'ValueError: cannot reshape array of size 1 into shape (1,2)'
     try:
-        return array.reshape(shape)
+        return np.frombuffer(buffer, dtype).reshape(shape)
     except ValueError as e:
         # Missing some chunks
         raise DocumentNotFoundError(find_key) from e

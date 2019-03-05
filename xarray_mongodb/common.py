@@ -38,7 +38,7 @@ class XarrayMongoDBCommon:
     """Common functionality of :class:`XarrayMongoDB` and
     :class:`XarrayMongoDBAsyncIO`
 
-    :param db:
+    :param database:
         :class:`pymongo.database.Database` or
         :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     :param str collection:
@@ -49,10 +49,10 @@ class XarrayMongoDBCommon:
         Size of the payload in a document in the chunks collection.
         Not to be confused with dask chunks.
     """
-    def __init__(self, db, collection: str = 'xarray',
+    def __init__(self, database, collection: str = 'xarray',
                  chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT):
-        self.meta = db[collection].arrays
-        self.chunks = db[collection].chunks
+        self.meta = database[collection].arrays
+        self.chunks = database[collection].chunks
         self.chunk_size_bytes = chunk_size_bytes
 
     def _dataset_to_meta(self, x: Union[xarray.DataArray, xarray.Dataset]

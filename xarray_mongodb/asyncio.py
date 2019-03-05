@@ -17,17 +17,17 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
     """:mod:`asyncio` driver for MongoDB to read/write
     xarray objects
 
-    :param db:
+    :param database:
         :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     :param str collection:
         See :class:`~xarray_mongodb.XarrayMongoDB`
     :param int chunk_size_bytes:
         See :class:`~xarray_mongodb.XarrayMongoDB`
     """
-    def __init__(self, db: motor.motor_asyncio.AsyncIOMotorDatabase,
+    def __init__(self, database: motor.motor_asyncio.AsyncIOMotorDatabase,
                  collection: str = 'xarray',
                  chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT):
-        super().__init__(db, collection, chunk_size_bytes)
+        super().__init__(database, collection, chunk_size_bytes)
         self._has_index = False
 
     async def _create_index(self):
