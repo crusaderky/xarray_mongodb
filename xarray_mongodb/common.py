@@ -326,16 +326,9 @@ def ensure_pymongo(obj):
     """
     if obj.__class__.__module__.startswith('pymongo.'):
         return obj
-    if not obj.delegate.__class__.__module__.startswith('pymongo.'):
-        raise TypeError('Neither a pymongo nor a motor object')
-    return obj.delegate
-
-
-def collect(*futures):
-    """Dummy node in the dask graph whose only purpose is to collect
-    a bunch of other nodes
-    """
-    pass
+    if obj.delegate.__class__.__module__.startswith('pymongo.'):
+        return obj.delegate
+    raise TypeError('Neither a pymongo nor a motor object')
 
 
 def chunks_lists_to_tuples(level: Union[list, int]) -> Union[Tuple, int]:
@@ -351,7 +344,13 @@ def chunks_lists_to_tuples(level: Union[list, int]) -> Union[Tuple, int]:
     """
     if isinstance(level, list):
         return tuple(chunks_lists_to_tuples(i) for i in level)
-    elif isinstance(level, int):
+    if isinstance(level, int):
         return level
-    else:
-        raise TypeError(level)
+    raise TypeError(level)
+
+
+def collect(*futures):
+    """Dummy node in the dask graph whose only purpose is to collect
+    a bunch of other nodes
+    """
+    pass

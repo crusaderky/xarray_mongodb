@@ -10,14 +10,26 @@ import os.path
 import pickle
 import subprocess
 import sys
+import uuid
+import pytest
 import xarray
-from . import xdb  # noqa: F401
 
 
 LOAD_PICKLE = os.path.join(os.path.dirname(__file__), 'load_pickle.py')
 
 
-def test_pickle(xdb, tmpdir):  # noqa: F811
+@pytest.fixture
+def xdb():
+    import pymongo
+    from xarray_mongodb import XarrayMongoDB
+
+    client = pymongo.MongoClient()
+    dbname = 'test_xarray_mongodb-%s' % uuid.uuid4()
+    yield XarrayMongoDB(client[dbname])
+    client.drop_database(dbname)
+
+
+def test_pickle(xdb, tmpdir):
     ds = xarray.DataArray([1, 2]).chunk()
     _, future = xdb.put(ds)
     assert future is not None

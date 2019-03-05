@@ -64,7 +64,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         load = self._normalize_load(meta, load)
         chunks_query = self._chunks_query(meta, load)
 
-        chunks, _ = await self.chunks.find(
-            chunks_query, CHUNKS_PROJECT).tolist()
+        chunks = await self.chunks.find(
+            chunks_query, CHUNKS_PROJECT).to_list(None)
         await index_task
         return self._docs_to_dataset(meta, chunks, load)
