@@ -24,8 +24,9 @@ def xdb():
     from xarray_mongodb import XarrayMongoDB
 
     client = pymongo.MongoClient()
-    dbname = 'test_xarray_mongodb-%s' % uuid.uuid4()
-    yield XarrayMongoDB(client[dbname])
+    dbname = 'test_xarray_mongodb'
+    coll = str(uuid.uuid4())
+    yield XarrayMongoDB(client[dbname], coll)
     client.drop_database(dbname)
 
 

@@ -334,7 +334,8 @@ def ensure_pymongo(obj):
     raise TypeError('Neither a pymongo nor a motor object')
 
 
-def chunks_lists_to_tuples(level: Union[list, int]) -> Union[Tuple, int]:
+def chunks_lists_to_tuples(level: Union[list, int, float]
+                           ) -> Union[tuple, int, float]:
     """Convert a recursive list of lists of ints into a tuple of tuples of
     ints. This is a helper function needed because MongoDB automatically
     converts tuples to lists, but the dask constructor wants the chunks
@@ -344,10 +345,13 @@ def chunks_lists_to_tuples(level: Union[list, int]) -> Union[Tuple, int]:
 
     - input: ``[[1, 2], [3, 4]]``
     - output: ``((1, 2), (3, 4))``
+
+    .. note::
+       float data type is supported to allow for NaN-sized dask chunks
     """
     if isinstance(level, list):
         return tuple(chunks_lists_to_tuples(i) for i in level)
-    if isinstance(level, int):
+    if isinstance(level, (int, float)):
         return level
     raise TypeError(level)
 

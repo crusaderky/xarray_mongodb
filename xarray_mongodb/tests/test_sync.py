@@ -12,8 +12,9 @@ def xdb():
     from xarray_mongodb import XarrayMongoDB
 
     client = pymongo.MongoClient()
-    dbname = 'test_xarray_mongodb-%s' % uuid.uuid4()
-    yield XarrayMongoDB(client[dbname])
+    dbname = 'test_xarray_mongodb'
+    coll = str(uuid.uuid4())
+    yield XarrayMongoDB(client[dbname], coll)
     client.drop_database(dbname)
 
 
@@ -33,8 +34,9 @@ def test_roundtrip(xdb, compute, load, chunks):
 
 
 def test_db_contents(xdb):
-    assert xdb.meta.name == 'xarray.meta'
-    assert xdb.chunks.name == 'xarray.chunks'
+    assert xdb.meta.name.endswith('.meta')
+    assert xdb.chunks.name.endswith('.chunks')
+    assert xdb.meta.name.split('.')[:-1] == xdb.chunks.name.split('.')[:-1]
 
     _id, future = xdb.put(ds)
     future.compute()
@@ -62,6 +64,42 @@ def test_multisegment(xdb):
     assert xdb.chunks.find_one({'n': 2})
     ds2 = xdb.get(_id)
     xarray.testing.assert_identical(ds, ds2)
+
+
+def test_size_zero(xdb):
+    a = xarray.DataArray([])
+    _id, _ = xdb.put(a)
+    a2 = xdb.get(_id)
+    xarray.testing.assert_identical(a, a2)
+
+
+def test_nan_chunks(xdb):
+    """Test the case where the metadata of a dask array can't know the
+    chunk sizes, as they are defined at the moment of computing it.
+
+    .. note::
+       We're triggering a degenerate case where one of the chunks has size 0.
+    """
+    a = xarray.DataArray([1, 2, 3, 4]).chunk(2)
+
+    # two xarray bugs at the moment of writing:
+    # https://github.com/pydata/xarray/issues/2801
+    # a = a[a > 2]
+    a = xarray.DataArray(a.data[a.data > 2])
+
+    assert str(a.shape) == '(nan,)'
+    assert str(a.chunks) == '((nan, nan),)'
+    _id, future = xdb.put(a)
+    future.compute()
+    a2 = xdb.get(_id)
+    assert str(a2.shape) == '(nan,)'
+    assert str(a2.chunks) == '((nan, nan),)'
+
+    # second xarray bug
+    # xarray.testing.assert_identical(a, a2)
+    xarray.testing.assert_identical(
+        xarray.DataArray(a.data.compute()),
+        xarray.DataArray(a2.data.compute()))
 
 
 def test_meta_not_found(xdb):

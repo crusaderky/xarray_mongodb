@@ -48,6 +48,8 @@ def array_to_docs(array: np.ndarray, meta_id: ObjectId, name: str,
     inserted into the 'chunks' collection
     """
     buffer = array.tobytes()
+    # Guarantee at least one document in case of size 0
+    buflen = max(len(buffer), 1)
     return [
         {
             'meta_id': meta_id,
@@ -59,7 +61,7 @@ def array_to_docs(array: np.ndarray, meta_id: ObjectId, name: str,
             'data': buffer[offset:offset + chunk_size_bytes],
         }
         for n, offset in enumerate(range(
-            0, len(buffer), chunk_size_bytes))
+            0, buflen, chunk_size_bytes))
     ]
 
 
