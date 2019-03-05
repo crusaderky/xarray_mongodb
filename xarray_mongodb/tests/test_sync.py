@@ -33,7 +33,7 @@ def test_roundtrip(xdb, compute, load, chunks):
 
 
 def test_db_contents(xdb):
-    assert xdb.meta.name == 'xarray.arrays'
+    assert xdb.meta.name == 'xarray.meta'
     assert xdb.chunks.name == 'xarray.chunks'
 
     _id, future = xdb.put(ds)

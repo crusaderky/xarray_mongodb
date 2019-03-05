@@ -47,11 +47,13 @@ class XarrayMongoDBCommon:
         <collection>.meta and <collection>.chunks.
     :param int chunk_size_bytes:
         Size of the payload in a document in the chunks collection.
-        Not to be confused with dask chunks.
+        Not to be confused with dask chunks. dask chunks that are larger
+        than chunk_size_bytes will be transparently split across multiple
+        MongoDB documents.
     """
     def __init__(self, database, collection: str = 'xarray',
                  chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT):
-        self.meta = database[collection].arrays
+        self.meta = database[collection].meta
         self.chunks = database[collection].chunks
         self.chunk_size_bytes = chunk_size_bytes
 
@@ -176,7 +178,8 @@ class XarrayMongoDBCommon:
             document from the 'meta' collection
         :param load:
             True, False, None, or sequence of variable names
-            which may or may not exist
+            which may or may not exist. See
+            :meth:`xarray_mongodb.XarrayMongoClient.get`.
         :returns:
             set of variable names to be loaded
         """

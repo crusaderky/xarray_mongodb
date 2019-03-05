@@ -48,7 +48,7 @@ async def test_roundtrip(event_loop, xdb, compute, load, chunks):
 @requires_motor
 @pytest.mark.asyncio
 async def test_db_contents(event_loop, xdb):
-    assert xdb.meta.name == 'xarray.arrays'
+    assert xdb.meta.name == 'xarray.meta'
     assert xdb.chunks.name == 'xarray.chunks'
 
     _id, future = await xdb.put(ds)
