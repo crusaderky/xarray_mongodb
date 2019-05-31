@@ -5,7 +5,7 @@ import pymongo.database
 import pymongo.collection
 
 
-def patch_pymongo():
+def patch_pymongo() -> None:
     pymongo.MongoClient.__init__ = client_init
     pymongo.MongoClient.__getstate__ = client_getstate
     pymongo.MongoClient.__setstate__ = client_setstate

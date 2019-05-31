@@ -30,7 +30,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         super().__init__(database, collection, chunk_size_bytes)
         self._has_index = False
 
-    async def _create_index(self):
+    async def _create_index(self) -> None:
         """Create the index on the 'chunk' collection
         on the first get() or put()
         """
@@ -61,10 +61,10 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         if not meta:
             await index_task
             raise DocumentNotFoundError(_id)
-        load = self._normalize_load(meta, load)
-        chunks_query = self._chunks_query(meta, load)
+        load_norm = self._normalize_load(meta, load)
+        chunks_query = self._chunks_query(meta, load_norm)
 
         chunks = await self.chunks.find(
             chunks_query, CHUNKS_PROJECT).to_list(None)
         await index_task
-        return self._docs_to_dataset(meta, chunks, load)
+        return self._docs_to_dataset(meta, chunks, load_norm)

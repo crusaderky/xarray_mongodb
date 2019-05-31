@@ -3,16 +3,11 @@
 - loading/writing a numpy.ndarray on MongoDB
 - converting between MongoDB documnents and numpy.ndarray
 """
-from threading import RLock
 from typing import Union, List
 import numpy as np
 import pymongo
 from bson import ObjectId
 from .errors import DocumentNotFoundError
-
-
-clients = {}
-clients_lock = RLock()
 
 
 def mongodb_put_array(array: np.ndarray,

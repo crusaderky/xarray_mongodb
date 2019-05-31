@@ -1,9 +1,9 @@
 """Shared code between :class:`XarrayMongoDB` and :class:`XarrayMongoDBAsyncIO`
 """
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from functools import partial
 from itertools import groupby
-from typing import List, Tuple, Set, Sequence, Union
+from typing import DefaultDict, Dict, List, Tuple, Set, Sequence, Union
 
 import bson
 import dask.array
@@ -109,12 +109,12 @@ class XarrayMongoDBCommon:
             x = x.to_dataset(name='__DataArray__')
 
         # MongoDB documents to be inserted in the 'chunks' collection
-        chunks = []
+        chunks = []  # type: List[dict]
 
         # Building blocks of the dask graph
-        keys = []
-        layers = {}
-        dependencies = {}
+        keys = []  # type: List[tuple]
+        layers = {}  # type: Dict[str, Dict[str, tuple]]
+        dependencies = {}  # type: Dict[str, Set[str]]
 
         for var_name, variable in x.variables.items():
             graph = variable.__dask_graph__()
@@ -132,7 +132,7 @@ class XarrayMongoDBCommon:
         if keys:
             # Build dask Delayed
             toplevel_name = 'mongodb_put_dataset-' + dask.base.tokenize(*keys)
-            layers[toplevel_name] = {toplevel_name: (collect, ) + tuple(keys)}
+            layers[toplevel_name] = {toplevel_name: tuple((collect, *keys))}
             dependencies[toplevel_name] = {key[0] for key in keys}
             # Aggregate the delayeds into a single delayed
             graph = dask.highlevelgraph.HighLevelGraph(
@@ -142,7 +142,8 @@ class XarrayMongoDBCommon:
 
     def _delayed_put(self, meta_id: bson.ObjectId, var_name: str,
                      var: xarray.Variable
-                     ) -> Tuple[List, dask.highlevelgraph.HighLevelGraph]:
+                     ) -> Tuple[List[tuple],
+                                dask.highlevelgraph.HighLevelGraph]:
         """Helper method of put().
         Convert a dask-based Variable into a delayed put into the
         chunks collection.
@@ -196,7 +197,9 @@ class XarrayMongoDBCommon:
             return index_coords
         if load is None:
             return index_coords | numpy_vars
-        return index_coords | (all_vars & set(load))
+        if isinstance(load, Sequence) and not isinstance(load, str):
+            return index_coords | (all_vars & set(load))
+        raise TypeError(load)
 
     @staticmethod
     def _chunks_query(meta: dict, load: Set[str]) -> dict:
@@ -222,7 +225,7 @@ class XarrayMongoDBCommon:
         chunks.sort(key=lambda doc: (doc['name'], doc['chunk'], doc['n']))
 
         # Convert list of docs into {var name: {chunk: numpy array}}
-        variables = defaultdict(dict)
+        variables = DefaultDict(dict)  # type: DefaultDict[str, Dict[Tuple[int, ...], numpy.array]]  # noqa: E501
         for (var_name, chunk_id), docs in groupby(
                 chunks, lambda doc: (doc['name'], doc['chunk'])):
             if isinstance(chunk_id, list):
@@ -300,7 +303,7 @@ class XarrayMongoDBCommon:
             coll, meta_id, name)
 
         if meta['chunks'] is None:
-            chunks = -1
+            chunks = -1  # type: Union[tuple, int, float]
         else:
             chunks = chunks_lists_to_tuples(meta['chunks'])
 

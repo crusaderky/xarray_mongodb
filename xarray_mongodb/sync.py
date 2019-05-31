@@ -34,7 +34,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         super().__init__(database, collection, chunk_size_bytes)
         self._has_index = False
 
-    def _create_index(self):
+    def _create_index(self) -> None:
         """Create the index on the 'chunk' collection
         on the first get() or put()
         """
@@ -138,8 +138,8 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         meta = self.meta.find_one({'_id': _id})
         if not meta:
             raise DocumentNotFoundError(_id)
-        load = self._normalize_load(meta, load)
-        chunks_query = self._chunks_query(meta, load)
+        load_norm = self._normalize_load(meta, load)
+        chunks_query = self._chunks_query(meta, load_norm)
         chunks = list(self.chunks.find(
             chunks_query, CHUNKS_PROJECT))
-        return self._docs_to_dataset(meta, chunks, load)
+        return self._docs_to_dataset(meta, chunks, load_norm)

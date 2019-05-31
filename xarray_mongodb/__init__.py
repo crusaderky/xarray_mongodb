@@ -18,13 +18,9 @@ from .sync import XarrayMongoDB  # noqa: F401
 
 try:
     import motor
-    if motor.version_tuple[0] < 2:
-        raise ImportError()
+    has_motor = motor.version_tuple >= (2, 0)
 except ImportError:
-    # Define stub so that the user gets a nice exception message when he tries
-    # using the class
-    class XarrayMongoDBAsyncIO:
-        def __init__(self, *args, **kwargs):
-            raise ImportError('Requires motor >= 2.0')
-else:
+    has_motor = False
+
+if has_motor:
     from .asyncio import XarrayMongoDBAsyncIO  # noqa: F401
