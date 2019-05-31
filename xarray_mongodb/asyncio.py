@@ -42,7 +42,8 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
                   ) -> Tuple[bson.ObjectId, Union[Delayed, None]]:
         """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.put`
         """
-        index_task = asyncio.create_task(self._create_index())
+        loop = asyncio.get_event_loop()
+        index_task = loop.create_task(self._create_index())
         meta = self._dataset_to_meta(x)
         _id = (await self.meta.insert_one(meta)).inserted_id
         chunks, delayed = self._dataset_to_chunks(x, _id)
@@ -56,7 +57,8 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
                   ) -> Union[xarray.DataArray, xarray.Dataset]:
         """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.get`
         """
-        index_task = asyncio.create_task(self._create_index())
+        loop = asyncio.get_event_loop()
+        index_task = loop.create_task(self._create_index())
         meta = await self.meta.find_one({'_id': _id})
         if not meta:
             await index_task

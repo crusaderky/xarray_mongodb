@@ -5,7 +5,7 @@ Installation
 
 Required dependencies
 ---------------------
-- Python 3.5 or later
+- Python 3.6 or later
 - `xarray <http://xarray.pydata.org>`_
 - `dask <https://dask.org/>`_
 - `PyMongo <https://api.mongodb.com/python/current/>`_

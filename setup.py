@@ -26,7 +26,6 @@ CLASSIFIERS = [
     'Intended Audience :: Science/Research',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Topic :: Scientific/Engineering',
@@ -35,7 +34,7 @@ CLASSIFIERS = [
 INSTALL_REQUIRES = [
     'numpy >= 1.13',
     'pandas >= 0.21',
-    'dask >= 0.19',
+    'dask >= 1.1',
     'xarray >= 0.10.1',
     'pymongo >= 3.7',
 ]
@@ -131,6 +130,7 @@ setup(name=DISTNAME,
       install_requires=INSTALL_REQUIRES,
       extras_require=EXTRAS_REQUIRE,
       tests_require=TESTS_REQUIRE,
+      python_requires='>=3.6',
       url=URL,
       packages=find_packages(),
       package_data={'xarray_mongodb': ['py.typed']})

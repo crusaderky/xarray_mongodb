@@ -1,6 +1,6 @@
 """Shared code between :class:`XarrayMongoDB` and :class:`XarrayMongoDBAsyncIO`
 """
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from functools import partial
 from itertools import groupby
 from typing import DefaultDict, Dict, List, Tuple, Set, Sequence, Union
@@ -225,7 +225,7 @@ class XarrayMongoDBCommon:
         chunks.sort(key=lambda doc: (doc['name'], doc['chunk'], doc['n']))
 
         # Convert list of docs into {var name: {chunk: numpy array}}
-        variables = DefaultDict(dict)  # type: DefaultDict[str, Dict[Tuple[int, ...], numpy.array]]  # noqa: E501
+        variables = defaultdict(dict)  # type: DefaultDict[str, Dict[Tuple[int, ...], numpy.array]]  # noqa: E501
         for (var_name, chunk_id), docs in groupby(
                 chunks, lambda doc: (doc['name'], doc['chunk'])):
             if isinstance(chunk_id, list):

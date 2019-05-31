@@ -3,14 +3,16 @@ channels:
   - anaconda
   - conda-forge
 dependencies:
-  - python=3.5.2
-  - coveralls
-  - dask=0.19.0
+  - pip
+  - python=3.6.0
   - motor=2.0.0
+  - numpy=1.13
+  - toolz=0.8.2
+  - pandas=0.21.0
   - pymongo=3.7
   - pytest=3.6
-  - pytest-asyncio=0.10
+  - pytest-asyncio=0.10.0
   - pytest-cov
   - xarray=0.10.1
-  - numpy=1.13
-  - pandas=0.21.0
+  - pip:
+    - dask==1.1.0
