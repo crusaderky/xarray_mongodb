@@ -133,4 +133,4 @@ setup(name=DISTNAME,
       tests_require=TESTS_REQUIRE,
       url=URL,
       packages=find_packages(),
-      package_data={'xarray_mongodb': ['tests/data/*']})
+      package_data={'xarray_mongodb': ['py.typed']})

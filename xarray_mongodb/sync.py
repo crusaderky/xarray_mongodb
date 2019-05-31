@@ -80,7 +80,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
             ) -> Union[xarray.DataArray, xarray.Dataset]:
         """Read an xarray object back from MongoDB
 
-        :param :class:`~bson.objectid.ObjectId` _id:
+        :param :class:`~bson.ObjectId` _id:
             MongoDB object ID, as returned by :meth:`put`
 
         :param load:

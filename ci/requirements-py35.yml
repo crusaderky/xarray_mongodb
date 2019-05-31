@@ -9,6 +9,7 @@ dependencies:
   - motor
   - pymongo
   - pytest
-  - pytest-asyncio >=0.10
   - pytest-cov
   - xarray
+  - pip:
+    - pytest-asyncio >=0.10

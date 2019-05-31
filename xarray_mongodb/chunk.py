@@ -7,7 +7,7 @@ from threading import RLock
 from typing import Union, List
 import numpy as np
 import pymongo
-from bson.objectid import ObjectId
+from bson import ObjectId
 from .errors import DocumentNotFoundError
 
 

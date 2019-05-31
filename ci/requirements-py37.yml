@@ -9,6 +9,9 @@ dependencies:
   - motor
   - pymongo
   - pytest
-  - pytest-asyncio >=0.10
+  - pytest-asyncio
   - pytest-cov
   - xarray
+  # code linters (running only in the latest version of Python)
+  - flake8
+  - mypy
