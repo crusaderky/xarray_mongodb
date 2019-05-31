@@ -35,7 +35,7 @@ INSTALL_REQUIRES = [
     'numpy >= 1.13',
     'pandas >= 0.21',
     'dask >= 1.1',
-    'xarray >= 0.10.1',
+    'xarray >= 0.10.4',
     'pymongo >= 3.7',
 ]
 EXTRAS_REQUIRE = {'motor': ['motor >= 2.0']}
