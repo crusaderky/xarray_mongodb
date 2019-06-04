@@ -9,11 +9,12 @@ from .data import ds, parametrize_roundtrip, expect_chunks, expect_meta
 
 @pytest.yield_fixture()
 def event_loop():
-    """pytest-asyncio by default creates a new event loop or every new
-    coroutine. This happens *after* the fixtures are applied, which causes the
-    AsyncIOMotorClient to be attached to the wrong event loop
+    """pytest-asyncio by default creates a new event loop or every new coroutine. This
+    happens *after* the fixtures are applied, which causes the AsyncIOMotorClient to be
+    attached to the wrong event loop
     """
     import asyncio
+
     yield asyncio.get_event_loop()
 
 
@@ -23,7 +24,7 @@ async def xdb():
     from xarray_mongodb import XarrayMongoDBAsyncIO
 
     client = motor.motor_asyncio.AsyncIOMotorClient()
-    dbname = 'test_xarray_mongodb'
+    dbname = "test_xarray_mongodb"
     coll = str(uuid.uuid4())
     yield XarrayMongoDBAsyncIO(client[dbname], coll)
     await client.drop_database(dbname)
@@ -49,26 +50,27 @@ async def test_roundtrip(event_loop, xdb, compute, load, chunks):
 @requires_motor
 @pytest.mark.asyncio
 async def test_db_contents(event_loop, xdb):
-    assert xdb.meta.name.endswith('.meta')
-    assert xdb.chunks.name.endswith('.chunks')
-    assert xdb.meta.name.split('.')[:-1] == xdb.chunks.name.split('.')[:-1]
+    assert xdb.meta.name.endswith(".meta")
+    assert xdb.chunks.name.endswith(".chunks")
+    assert xdb.meta.name.split(".")[:-1] == xdb.chunks.name.split(".")[:-1]
 
     _id, future = await xdb.put(ds)
     future.compute()
 
     assert await xdb.meta.find().to_list(None) == expect_meta(_id)
     chunks = sorted(
-        await xdb.chunks.find({}, {'_id': False}).to_list(None),
-        key=lambda doc: (doc['name'], doc['chunk']))
+        await xdb.chunks.find({}, {"_id": False}).to_list(None),
+        key=lambda doc: (doc["name"], doc["chunk"]),
+    )
     assert chunks == sorted(
-        expect_chunks(_id),
-        key=lambda doc: (doc['name'], doc['chunk']))
+        expect_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
+    )
 
 
 @requires_motor
 @pytest.mark.asyncio
 async def test_dataarray(event_loop, xdb):
-    a = xarray.DataArray([1, 2], dims=['x'], coords={'x': ['x1', 'x2']})
+    a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]})
     _id, _ = await xdb.put(a)
     a2 = await xdb.get(_id)
     xarray.testing.assert_identical(a, a2)
@@ -80,7 +82,7 @@ async def test_multisegment(event_loop, xdb):
     xdb.chunk_size_bytes = 4
     _id, future = await xdb.put(ds)
     future.compute()
-    assert await xdb.chunks.find_one({'n': 2})
+    assert await xdb.chunks.find_one({"n": 2})
     ds2 = await xdb.get(_id)
     xarray.testing.assert_identical(ds, ds2)
 
@@ -110,27 +112,27 @@ async def test_nan_chunks(xdb):
     # a = a[a > 2]
     a = xarray.DataArray(a.data[a.data > 2])
 
-    assert str(a.shape) == '(nan,)'
-    assert str(a.chunks) == '((nan, nan),)'
+    assert str(a.shape) == "(nan,)"
+    assert str(a.chunks) == "((nan, nan),)"
     _id, future = await xdb.put(a)
     future.compute()
     a2 = await xdb.get(_id)
-    assert str(a2.shape) == '(nan,)'
-    assert str(a2.chunks) == '((nan, nan),)'
+    assert str(a2.shape) == "(nan,)"
+    assert str(a2.chunks) == "((nan, nan),)"
 
     # second xarray bug
     # xarray.testing.assert_identical(a, a2)
     xarray.testing.assert_identical(
-        xarray.DataArray(a.data.compute()),
-        xarray.DataArray(a2.data.compute()))
+        xarray.DataArray(a.data.compute()), xarray.DataArray(a2.data.compute())
+    )
 
 
 @requires_motor
 @pytest.mark.asyncio
 async def test_meta_not_found(event_loop, xdb):
     with pytest.raises(DocumentNotFoundError) as ex:
-        await xdb.get(bson.ObjectId('deadbeefdeadbeefdeadbeef'))
-    assert str(ex.value) == 'deadbeefdeadbeefdeadbeef'
+        await xdb.get(bson.ObjectId("deadbeefdeadbeefdeadbeef"))
+    assert str(ex.value) == "deadbeefdeadbeefdeadbeef"
 
 
 @requires_motor
@@ -138,28 +140,30 @@ async def test_meta_not_found(event_loop, xdb):
 async def test_no_segments_found(event_loop, xdb):
     _id, future = await xdb.put(ds)
     future.compute()
-    await xdb.chunks.delete_many({'name': 'd', 'chunk': [1, 0]})
+    await xdb.chunks.delete_many({"name": "d", "chunk": [1, 0]})
     ds2 = await xdb.get(_id)
     with pytest.raises(DocumentNotFoundError) as ex:
         ds2.compute()
     assert str(ex.value) == (
-        f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}")
+        f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}"
+    )
 
 
 @requires_motor
 @pytest.mark.asyncio
-# A missing chunk with chunk_size_bytes=2 causes np.frombuffer to crash
-# with 'ValueError: buffer size must be a multiple of element size'
-# A missing chunk with chunk_size_bytes=8 causes ndarray.reshape
-# to crash with 'ValueError: cannot reshape array of size 1 into shape (1,2)'
-@pytest.mark.parametrize('chunk_size_bytes', (2, 8))
+# A missing chunk with chunk_size_bytes=2 causes np.frombuffer to crash with
+# 'ValueError: buffer size must be a multiple of element size'.
+# A missing chunk with chunk_size_bytes=8 causes ndarray.reshape to crash with
+# 'ValueError: cannot reshape array of size 1 into shape (1,2)'.
+@pytest.mark.parametrize("chunk_size_bytes", (2, 8))
 async def test_some_segments_not_found(event_loop, xdb, chunk_size_bytes):
     xdb.chunk_size_bytes = chunk_size_bytes
     _id, future = await xdb.put(ds)
     future.compute()
-    await xdb.chunks.delete_one({'name': 'd', 'chunk': [1, 0], 'n': 1})
+    await xdb.chunks.delete_one({"name": "d", "chunk": [1, 0], "n": 1})
     ds2 = await xdb.get(_id)
     with pytest.raises(DocumentNotFoundError) as ex:
         ds2.compute()
     assert str(ex.value) == (
-        f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}")
+        f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}"
+    )

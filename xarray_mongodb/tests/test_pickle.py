@@ -1,10 +1,10 @@
 """Test that the pymongo.MongoClient embedded in the dask future can be
 pickled/unpickled and sent over the network to dask distributed.
 
-This requires a monkey-patch to pymongo (patch_pymongo.py) which must be loaded
-by the interpreter BEFORE unpickling the pymongo.MongoClient object. This is
-achieved by always having a function defined by xarray_mongodb before the
-pymongo.MongoClient object in the tuples that constitute the dask graph.
+This requires a monkey-patch to pymongo (patch_pymongo.py) which must be loaded by the
+interpreter BEFORE unpickling the pymongo.MongoClient object. This is achieved by always
+having a function defined by xarray_mongodb before the pymongo.MongoClient object in the
+tuples that constitute the dask graph.
 """
 import os.path
 import pickle
@@ -15,7 +15,7 @@ import pytest
 import xarray
 
 
-LOAD_PICKLE = os.path.join(os.path.dirname(__file__), 'load_pickle.py')
+LOAD_PICKLE = os.path.join(os.path.dirname(__file__), "load_pickle.py")
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def xdb():
     from xarray_mongodb import XarrayMongoDB
 
     client = pymongo.MongoClient()
-    dbname = 'test_xarray_mongodb'
+    dbname = "test_xarray_mongodb"
     coll = str(uuid.uuid4())
     yield XarrayMongoDB(client[dbname], coll)
     client.drop_database(dbname)
@@ -35,6 +35,6 @@ def test_pickle(xdb, tmpdir):
     _, future = xdb.put(ds)
     assert future is not None
 
-    with open(f'{tmpdir}/p.pickle', 'wb') as fh:
+    with open(f"{tmpdir}/p.pickle", "wb") as fh:
         pickle.dump(future, fh)
-    subprocess.check_call([sys.executable, LOAD_PICKLE, f'{tmpdir}/p.pickle'])
+    subprocess.check_call([sys.executable, LOAD_PICKLE, f"{tmpdir}/p.pickle"])

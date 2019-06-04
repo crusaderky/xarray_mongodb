@@ -12,5 +12,6 @@ dependencies:
   - pytest-cov
   - xarray
   # code linters (running only in the latest version of Python)
+  - black
   - flake8
   - mypy

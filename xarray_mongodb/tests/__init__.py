@@ -18,9 +18,9 @@ def _import_or_skip(modname, minversion=None):
             Tests decorated with it will only run if the module is available
             and >= minversion
     """
-    reason = 'requires %s' % modname
+    reason = "requires %s" % modname
     if minversion:
-        reason += '>=%s' % minversion
+        reason += ">=%s" % minversion
 
     try:
         mod = importlib.import_module(modname)
@@ -34,4 +34,4 @@ def _import_or_skip(modname, minversion=None):
     return has, func
 
 
-has_motor, requires_motor = _import_or_skip('motor', '2.0')
+has_motor, requires_motor = _import_or_skip("motor", "2.0")

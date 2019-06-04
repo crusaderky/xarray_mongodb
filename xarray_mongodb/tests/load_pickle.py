@@ -4,10 +4,10 @@ import os
 import pickle
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
-if __name__ == '__main__':
-    with open(sys.argv[-1], 'rb') as fh:
+if __name__ == "__main__":
+    with open(sys.argv[-1], "rb") as fh:
         d = pickle.load(fh)
     d.compute()
