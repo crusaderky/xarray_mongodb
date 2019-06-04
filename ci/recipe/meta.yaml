@@ -1,4 +1,4 @@
-{% set version = "0.1.0+dev.3f1a979" %}
+{% set version = "0.1.0+dev.c3a644a" %}
 
 package:
   name: xarray_mongodb
