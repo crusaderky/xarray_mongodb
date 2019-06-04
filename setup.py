@@ -79,7 +79,7 @@ if not ISRELEASED:
             write_version = False
         else:
             warnings.warn(
-                "WARNING: Couldn't get git revision," " using generic version string"
+                "WARNING: Couldn't get git revision; using generic version string"
             )
     else:
         # have git, in git dir, but may have used a shallow clone (travis does
