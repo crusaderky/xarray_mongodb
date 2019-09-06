@@ -4,8 +4,10 @@ branches:
   except:
     - fix-docs
 
-environment:
+services:
+  - mongodb
 
+environment:
   matrix:
     - PYTHON: "C:\\Python36-conda64"
       PYTHON_VERSION: "3.7"
