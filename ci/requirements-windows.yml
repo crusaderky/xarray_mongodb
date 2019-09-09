@@ -6,6 +6,7 @@ dependencies:
   - dask
   - pymongo
   - pytest
+  - pytest-asyncio
   - pytest-cov
   - xarray
 
