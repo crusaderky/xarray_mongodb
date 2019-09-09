@@ -9,8 +9,11 @@ ds = xarray.Dataset(
     data_vars={"d": (("x", "y"), [[10, 20], [30, 40]]), "s": 1.0},
     attrs={"foo": "bar"},
 )
-ds["d"] = ds["d"].chunk({"x": 1, "y": 2})
-ds["x3"] = ds["x3"].chunk(1)
+# In Linux/MacOSX, the default dtype for int is int64. In Windows, it's int32.
+ds["d"] = ds["d"].astype('i8').chunk({"x": 1, "y": 2})
+ds["x"] = ds["x"].astype('i8')
+ds["x2"] = ds["x2"].astype('i8')
+ds["x3"] = ds["x3"].astype('i8').chunk(1)
 
 
 parametrize_roundtrip = pytest.mark.parametrize(
