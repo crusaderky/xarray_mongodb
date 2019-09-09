@@ -1,19 +1,23 @@
 """Shared test data between test_sync and test_async
 """
+import dask.array as da
 import pytest
 import xarray
 
 
 ds = xarray.Dataset(
     coords={"x": (("x",), [1, 2]), "x2": (("x",), [3, 4]), "x3": (("x",), [5, 6])},
-    data_vars={"d": (("x", "y"), [[10, 20], [30, 40]]), "s": 1.0},
+    data_vars={
+        "d": (("x", "y"), [[10, 20], [30, 40]]),
+        "s": da.from_array(1.0, chunks=()),
+    },
     attrs={"foo": "bar"},
 )
 # In Linux/MacOSX, the default dtype for int is int64. In Windows, it's int32.
-ds["d"] = ds["d"].astype('i8').chunk({"x": 1, "y": 2})
-ds["x"] = ds["x"].astype('i8')
-ds["x2"] = ds["x2"].astype('i8')
-ds["x3"] = ds["x3"].astype('i8').chunk(1)
+ds["d"] = ds["d"].astype("i8").chunk({"x": 1, "y": 2})
+ds["x"] = ds["x"].astype("i8")
+ds["x2"] = ds["x2"].astype("i8")
+ds["x3"] = ds["x3"].astype("i8").chunk(1)
 
 
 parametrize_roundtrip = pytest.mark.parametrize(
@@ -22,7 +26,7 @@ parametrize_roundtrip = pytest.mark.parametrize(
         (
             False,
             None,
-            {"x": None, "x2": None, "x3": ((1, 1),), "d": ((1, 1), (2,)), "s": None},
+            {"x": None, "x2": None, "x3": ((1, 1),), "d": ((1, 1), (2,)), "s": ()},
         ),
         (
             False,
@@ -50,9 +54,27 @@ def expect_meta(_id):
             "attrs": {"foo": "bar"},
             "chunkSize": 261120,
             "coords": {
-                "x": {"chunks": None, "dims": ["x"], "dtype": "<i8", "shape": [2]},
-                "x2": {"chunks": None, "dims": ["x"], "dtype": "<i8", "shape": [2]},
-                "x3": {"chunks": [[1, 1]], "dims": ["x"], "dtype": "<i8", "shape": [2]},
+                "x": {
+                    "chunks": None,
+                    "dims": ["x"],
+                    "dtype": "<i8",
+                    "shape": [2],
+                    "type": "ndarray",
+                },
+                "x2": {
+                    "chunks": None,
+                    "dims": ["x"],
+                    "dtype": "<i8",
+                    "shape": [2],
+                    "type": "ndarray",
+                },
+                "x3": {
+                    "chunks": [[1, 1]],
+                    "dims": ["x"],
+                    "dtype": "<i8",
+                    "shape": [2],
+                    "type": "ndarray",
+                },
             },
             "data_vars": {
                 "d": {
@@ -60,8 +82,15 @@ def expect_meta(_id):
                     "dims": ["x", "y"],
                     "dtype": "<i8",
                     "shape": [2, 2],
+                    "type": "ndarray",
                 },
-                "s": {"chunks": None, "dims": [], "dtype": "<f8", "shape": []},
+                "s": {
+                    "chunks": [],
+                    "dims": [],
+                    "dtype": "<f8",
+                    "shape": [],
+                    "type": "ndarray",
+                },
             },
         }
     ]
@@ -77,6 +106,7 @@ def expect_chunks(_id):
             "n": 0,
             "name": "d",
             "shape": [1, 2],
+            "type": "ndarray",
         },
         {
             "chunk": [1, 0],
@@ -86,15 +116,17 @@ def expect_chunks(_id):
             "n": 0,
             "name": "d",
             "shape": [1, 2],
+            "type": "ndarray",
         },
         {
-            "chunk": None,
+            "chunk": [],
             "data": b"\x00\x00\x00\x00\x00\x00\xf0?",
             "dtype": "<f8",
             "meta_id": _id,
             "n": 0,
             "name": "s",
             "shape": [],
+            "type": "ndarray",
         },
         {
             "chunk": None,
@@ -104,6 +136,7 @@ def expect_chunks(_id):
             "n": 0,
             "name": "x",
             "shape": [2],
+            "type": "ndarray",
         },
         {
             "chunk": None,
@@ -113,6 +146,7 @@ def expect_chunks(_id):
             "n": 0,
             "name": "x2",
             "shape": [2],
+            "type": "ndarray",
         },
         {
             "chunk": [0],
@@ -122,6 +156,7 @@ def expect_chunks(_id):
             "n": 0,
             "name": "x3",
             "shape": [1],
+            "type": "ndarray",
         },
         {
             "chunk": [1],
@@ -131,5 +166,6 @@ def expect_chunks(_id):
             "n": 0,
             "name": "x3",
             "shape": [1],
+            "type": "ndarray",
         },
     ]

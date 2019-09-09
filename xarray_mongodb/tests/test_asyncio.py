@@ -69,7 +69,8 @@ async def test_db_contents(event_loop, xdb):
 
 @requires_motor
 @pytest.mark.asyncio
-async def test_dataarray(event_loop, xdb):
+@pytest.mark.parametrize("name", [None, "foo"])
+async def test_dataarray(event_loop, xdb, name):
     a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]})
     _id, _ = await xdb.put(a)
     a2 = await xdb.get(_id)

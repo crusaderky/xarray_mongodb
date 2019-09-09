@@ -3,7 +3,7 @@
 from collections import defaultdict, OrderedDict
 from functools import partial
 from itertools import groupby
-from typing import DefaultDict, Dict, List, Tuple, Set, Sequence, Union
+from typing import DefaultDict, Dict, List, Tuple, Set, Sequence, Union, cast
 
 import bson
 import dask.array
@@ -71,7 +71,8 @@ class XarrayMongoDBCommon:
             "chunkSize": self.chunk_size_bytes,
         }
         if isinstance(x, xarray.DataArray):
-            meta["name"] = x.name
+            if x.name:
+                meta["name"] = x.name
             x = x.to_dataset(name="__DataArray__")
 
         for coll in ("coords", "data_vars"):
@@ -81,6 +82,7 @@ class XarrayMongoDBCommon:
                     "dtype": v.dtype.str,
                     "shape": v.shape,
                     "chunks": v.chunks,
+                    "type": "ndarray",
                 }
         return meta
 
@@ -119,7 +121,9 @@ class XarrayMongoDBCommon:
         for var_name, variable in x.variables.items():
             graph = variable.__dask_graph__()
             if graph:
-                put_keys, put_graph = self._delayed_put(meta_id, var_name, variable)
+                put_keys, put_graph = self._delayed_put(
+                    meta_id, str(var_name), variable
+                )
                 keys += put_keys
                 layers.update(put_graph.layers)
                 dependencies.update(put_graph.dependencies)
@@ -127,7 +131,7 @@ class XarrayMongoDBCommon:
                 chunks += chunk.array_to_docs(
                     variable.values,
                     meta_id=meta_id,
-                    name=var_name,
+                    name=str(var_name),
                     chunk=None,
                     chunk_size_bytes=self.chunk_size_bytes,
                 )
@@ -260,8 +264,9 @@ class XarrayMongoDBCommon:
         )
 
         if meta["data_vars"].keys() == {"__DataArray__"}:
-            ds = ds["__DataArray__"]
-            ds.name = meta["name"]
+            da = cast(xarray.DataArray, ds["__DataArray__"])
+            da.name = meta.get("name")
+            return da
         return ds
 
     @staticmethod
@@ -325,7 +330,9 @@ class XarrayMongoDBCommon:
                 coll=coll,
                 meta_id=meta_id,
                 name=name,
-                chunk=key[1:] if meta["chunks"] else None,
+                # Note: 'meta["chunks"] is not None' handles the special case of
+                # dask array with shape=()
+                chunk=key[1:] if meta["chunks"] is not None else None,
             )
 
             # See dask.highlevelgraph.HighLevelGraph

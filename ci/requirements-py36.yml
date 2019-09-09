@@ -6,8 +6,11 @@ dependencies:
   - python=3.6
   - dask
   - motor
+  - numpy>=1.17
+  - pint>=0.9
   - pymongo
   - pytest
   - pytest-asyncio
   - pytest-cov
+  - sparse>=0.8
   - xarray

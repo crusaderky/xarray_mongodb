@@ -1,0 +1,27 @@
+name: test_env
+channels:
+  # Use latest version from conda-forge. This is unlike all other environments, where
+  # older versions from anaconda are preferred when available.
+  - conda-forge
+dependencies:
+  - pip
+  - python=3.7
+  - pytest
+  - pytest-asyncio
+  - pytest-cov
+  # While it could make sense to compile these from sources, it would take just too
+  # long. So we'll be content with the latest versions from conda-forge.
+  - motor
+  - numba
+  - numpy
+  - pandas
+  - pymongo
+  - scipy
+  # needed by dask.delayed
+  - toolz
+  # Compile from sources using the git master tip
+  - pip:
+    - git+https://github.com/dask/dask.git
+    - git+https://github.com/hgrecco/pint.git
+    - git+https://github.com/pydata/sparse.git
+    - git+https://github.com/pydata/xarray.git

@@ -6,11 +6,12 @@ objects on
 MongoDB. Its design is heavily influenced by
 `GridFS <https://docs.mongodb.com/manual/core/gridfs/>`_.
 
-Features
---------
+
+Current Features
+----------------
 - Synchronous operations with
   `PyMongo <https://api.mongodb.com/python/current/>`_
-- asyncio support with `Motor <https://motor.readthedocs.io//>`_
+- asyncio support with `Motor <https://motor.readthedocs.io/>`_
 - Delayed put/get of xarray objects backed by `dask <https://dask.org/>`_.
   Only metadata and numpy-backed variables (e.g. indices) are written and read
   back at the time of graph definition.
@@ -22,12 +23,19 @@ Features
 - Data is stored on the database in a format that is agnostic to Python;
   this allows writing clients in different languages.
 
+
+Upcoming Features
+-----------------
+- Units annotations with `Pint <https://pint.readthedocs.io/>`_
+- Sparse arrays with `Sparse <https://sparse.pydata.org/>`_
+
+
 Limitations
 -----------
 - The Motor Tornado driver is not supported due to lack of developer
   interest - submissions are welcome.
-- Dataset.attrs must be limited to the data types natively accepted by
-  PyMongo.
+- ``attrs`` are limited to the data types natively accepted by PyMongo
+- Non-string xarray dimensions and variable names are not supported
 
 
 Quick start

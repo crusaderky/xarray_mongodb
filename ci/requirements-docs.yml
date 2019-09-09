@@ -10,5 +10,7 @@ dependencies:
   - sphinx_rtd_theme
   - dask
   - motor
+  - pint
   - pymongo
+  - sparse
   - xarray

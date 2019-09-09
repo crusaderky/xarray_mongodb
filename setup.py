@@ -38,7 +38,11 @@ INSTALL_REQUIRES = [
     "xarray >= 0.10.4",
     "pymongo >= 3.7",
 ]
-EXTRAS_REQUIRE = {"motor": ["motor >= 2.0"]}
+EXTRAS_REQUIRE = {
+    "asyncio": ["motor >= 2.0"],
+    "pint": ["pint >= 0.9", "numpy >= 1.16", "xarray > 0.12.3"],
+    "sparse": ["sparse >= 0.8", "numpy >= 1.16", "xarray > 0.12.3"],
+}
 TESTS_REQUIRE = ["pytest >= 3.6", "pytest-asyncio >= 0.10"]
 
 DESCRIPTION = "xarray_mongodb"

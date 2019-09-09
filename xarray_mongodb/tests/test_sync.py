@@ -50,8 +50,9 @@ def test_db_contents(xdb):
     )
 
 
-def test_dataarray(xdb):
-    a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]})
+@pytest.mark.parametrize("name", [None, "foo"])
+def test_dataarray(xdb, name):
+    a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]}, name=name)
     _id, _ = xdb.put(a)
     a2 = xdb.get(_id)
     xarray.testing.assert_identical(a, a2)

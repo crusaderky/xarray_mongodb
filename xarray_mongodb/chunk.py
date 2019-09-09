@@ -65,6 +65,7 @@ def array_to_docs(
             "n": n,
             "dtype": array.dtype.str,
             "shape": array.shape,
+            "type": "ndarray",
             "data": buffer[offset : offset + chunk_size_bytes],
         }
         for n, offset in enumerate(range(0, buflen, chunk_size_bytes))

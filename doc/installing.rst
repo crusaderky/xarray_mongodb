@@ -13,9 +13,19 @@ Required dependencies
 
 Optional dependencies
 ---------------------
-For asyncio support:
+- `Motor <https://motor.readthedocs.io//>`_ for asyncio support
 
- - `Motor <https://motor.readthedocs.io//>`_
+..
+    TODO
+    - `Pint <https://pint.readthedocs.io/en/0.9/>`_
+    - `Sparse <https://sparse.pydata.org/en/latest/>`_
+
+    .. note::
+       Pint and Sparse require:
+
+       - numpy =1.16 and the environment variable ``NUMPY_EXPERIMENTAL_ARRAY_FUNCTION=1``,
+         or numpy >=1.17
+       - xarray >=0.13
 
 
 Sphinx documentation
