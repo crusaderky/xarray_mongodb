@@ -83,7 +83,11 @@ Index
 
 License
 -------
-xarray_mongodb is available under the open source
+.. image::
+   _static/amphora.png
+
+xarray_mongodb is developed by `Amphora <http://www.amphora.net/>`_ and is available
+under the open source
 `Apache License <http://www.apache.org/licenses/LICENSE-2.0.html>`_
 
 The database storage specifications are patent-free and in the public domain.

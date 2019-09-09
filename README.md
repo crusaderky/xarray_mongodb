@@ -1,3 +1,5 @@
+![Amphora Logo](/doc/_static/amphora.png)
+
 xarray_mongodb
 ==============
 Read the full documentation at https://xarray-mongodb.readthedocs.io/en/latest/

@@ -284,7 +284,7 @@ texinfo_documents = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "motor": ("https://motor.readthedocs.io/en/stable/", None),
-    "dask": ("https://dask.pydata.org/en/latest/", None),
+    "dask": ("http://docs.dask.org/en/latest/", None),
     "pymongo": ("https://api.mongodb.com/python/current/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
 }
