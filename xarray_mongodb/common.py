@@ -1,9 +1,20 @@
 """Shared code between :class:`XarrayMongoDB` and :class:`XarrayMongoDBAsyncIO`
 """
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict, defaultdict
 from functools import partial
 from itertools import groupby
-from typing import DefaultDict, Dict, List, Tuple, Set, Sequence, Union, cast
+from typing import (
+    Collection,
+    DefaultDict,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 import bson
 import dask.array
@@ -16,7 +27,6 @@ import pymongo
 import xarray
 
 from . import chunk
-
 
 CHUNKS_INDEX = [("meta_id", 1), ("name", 1), ("chunk", 1)]
 CHUNKS_PROJECT = {"name": 1, "chunk": 1, "n": 1, "dtype": 1, "shape": 1, "data": 1}
@@ -88,7 +98,7 @@ class XarrayMongoDBCommon:
 
     def _dataset_to_chunks(
         self, x: Union[xarray.DataArray, xarray.Dataset], meta_id: bson.ObjectId
-    ) -> Tuple[List[dict], Union[Delayed, None]]:
+    ) -> Tuple[List[dict], Optional[Delayed]]:
         """Helper method of put().
         Convert a DataArray or Dataset into the list of dicts to insert into the
         'chunks' collection. For dask variables, generate a
@@ -180,14 +190,16 @@ class XarrayMongoDBCommon:
         return keys, graph
 
     @staticmethod
-    def _normalize_load(meta: dict, load: Union[bool, None, Sequence[str]]) -> Set[str]:
+    def _normalize_load(
+        meta: dict, load: Union[bool, None, Collection[str]]
+    ) -> Set[str]:
         """Helper method of get().
         Normalize the 'load' parameter of get().
 
         :param dict meta:
             document from the 'meta' collection
         :param load:
-            True, False, None, or sequence of variable names
+            True, False, None, or collection of variable names
             which may or may not exist. See
             :meth:`xarray_mongodb.XarrayMongoClient.get`.
         :returns:
@@ -206,7 +218,7 @@ class XarrayMongoDBCommon:
             return index_coords
         if load is None:
             return index_coords | numpy_vars
-        if isinstance(load, Sequence) and not isinstance(load, str):
+        if isinstance(load, Collection) and not isinstance(load, str):
             return index_coords | (all_vars & set(load))
         raise TypeError(load)
 
@@ -247,7 +259,7 @@ class XarrayMongoDBCommon:
             )
             variables[var_name][chunk_id] = array
 
-        def build_variables(where: str):
+        def build_variables(where: str) -> Iterator[Tuple[str, xarray.Variable]]:
             for var_name, var_meta in meta[where].items():
                 if var_name in load:
                     assert var_name in variables, var_name

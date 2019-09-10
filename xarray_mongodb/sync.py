@@ -1,6 +1,6 @@
 """synchronous driver based on PyMongo
 """
-from typing import Union, Tuple, Sequence
+from typing import Collection, Optional, Tuple, Union
 
 import bson
 import pymongo.database
@@ -8,10 +8,10 @@ import xarray
 from dask.delayed import Delayed
 
 from .common import (
-    XarrayMongoDBCommon,
     CHUNK_SIZE_BYTES_DEFAULT,
     CHUNKS_INDEX,
     CHUNKS_PROJECT,
+    XarrayMongoDBCommon,
 )
 from .errors import DocumentNotFoundError
 
@@ -50,7 +50,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
 
     def put(
         self, x: Union[xarray.DataArray, xarray.Dataset]
-    ) -> Tuple[bson.ObjectId, Union[Delayed, None]]:
+    ) -> Tuple[bson.ObjectId, Optional[Delayed]]:
         """Write an xarray object to MongoDB. Variables that are backed by dask are not
         computed; instead their insertion in the database is delayed. All other
         variables are immediately inserted.
@@ -83,7 +83,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         return _id, delayed
 
     def get(
-        self, _id: bson.ObjectId, load: Union[bool, None, Sequence[str]] = None
+        self, _id: bson.ObjectId, load: Union[bool, None, Collection[str]] = None
     ) -> Union[xarray.DataArray, xarray.Dataset]:
         """Read an xarray object back from MongoDB
 
@@ -102,7 +102,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
             False
                 Only load indices in memory; delay the loading of everything else with
                 dask.
-            sequence of str
+            collection of str
                 variable names that must be immediately loaded into memory. Regardless
                 of this, indices are always loaded. Non-existing variables are ignored.
                 When retrieving a DataArray, you can target the data with the special

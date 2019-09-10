@@ -1,8 +1,8 @@
 """Patch pymongo objects to make them serializable
 """
 import pymongo
-import pymongo.database
 import pymongo.collection
+import pymongo.database
 
 
 def patch_pymongo() -> None:

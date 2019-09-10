@@ -3,10 +3,12 @@
 - loading/writing a numpy.ndarray on MongoDB
 - converting between MongoDB documnents and numpy.ndarray
 """
-from typing import Union, List
+from typing import List, Optional, Tuple
+
 import numpy as np
 import pymongo
 from bson import ObjectId
+
 from .errors import DocumentNotFoundError
 
 
@@ -35,7 +37,7 @@ def mongodb_get_array(
     coll: pymongo.collection.Collection,
     meta_id: ObjectId,
     name: str,
-    chunk: Union[tuple, None],
+    chunk: Optional[Tuple[int, ...]],
 ) -> np.ndarray:
     """Insert a single chunk into MongoDB
     """
@@ -48,7 +50,7 @@ def array_to_docs(
     array: np.ndarray,
     meta_id: ObjectId,
     name: str,
-    chunk: Union[tuple, None],
+    chunk: Optional[Tuple[int, ...]],
     chunk_size_bytes: int,
 ) -> List[dict]:
     """Convert a numpy array to a list of MongoDB documents ready to be inserted into

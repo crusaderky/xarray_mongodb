@@ -1,7 +1,7 @@
 """asyncio driver based on Motor
 """
 import asyncio
-from typing import Union, Tuple, Sequence
+from typing import Collection, Optional, Tuple, Union
 
 import bson
 import motor.motor_asyncio
@@ -9,10 +9,10 @@ import xarray
 from dask.delayed import Delayed
 
 from .common import (
-    XarrayMongoDBCommon,
     CHUNK_SIZE_BYTES_DEFAULT,
     CHUNKS_INDEX,
     CHUNKS_PROJECT,
+    XarrayMongoDBCommon,
 )
 from .errors import DocumentNotFoundError
 
@@ -47,7 +47,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
 
     async def put(
         self, x: Union[xarray.DataArray, xarray.Dataset]
-    ) -> Tuple[bson.ObjectId, Union[Delayed, None]]:
+    ) -> Tuple[bson.ObjectId, Optional[Delayed]]:
         """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.put`
         """
         loop = asyncio.get_event_loop()
@@ -61,7 +61,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         return _id, delayed
 
     async def get(
-        self, _id: bson.ObjectId, load: Union[bool, None, Sequence[str]] = None
+        self, _id: bson.ObjectId, load: Union[bool, None, Collection[str]] = None
     ) -> Union[xarray.DataArray, xarray.Dataset]:
         """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.get`
         """

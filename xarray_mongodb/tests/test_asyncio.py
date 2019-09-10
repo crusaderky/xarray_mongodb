@@ -1,10 +1,13 @@
 import uuid
+
 import bson
 import pytest
 import xarray
+
 from xarray_mongodb import DocumentNotFoundError
+
 from . import requires_motor
-from .data import ds, parametrize_roundtrip, expect_chunks, expect_meta
+from .data import ds, expect_chunks, expect_meta, parametrize_roundtrip
 
 
 @pytest.yield_fixture()

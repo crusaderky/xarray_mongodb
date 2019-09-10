@@ -2,8 +2,8 @@
 import os
 import re
 import warnings
-from setuptools import find_packages, setup
 
+from setuptools import find_packages, setup
 
 MAJOR = 0
 MINOR = 1

@@ -8,14 +8,16 @@ except ImportError:  # pragma: no cover
     )
 
 
-# Make PyMongo objects serialisable
 from . import patch_pymongo
-
-patch_pymongo.patch_pymongo()
-
-
 from .errors import DocumentNotFoundError  # noqa: F401
 from .sync import XarrayMongoDB  # noqa: F401
+
+# Make PyMongo objects serialisable
+patch_pymongo.patch_pymongo()
+del patch_pymongo
+
+__all__ = ("__version__", "DocumentNotFoundError", "XarrayMongoDB")
+
 
 try:
     import motor
@@ -26,3 +28,7 @@ except ImportError:
 
 if has_motor:
     from .asyncio import XarrayMongoDBAsyncIO  # noqa: F401
+
+    __all__ = __all__ + ("XarrayMongoDBAsyncIO",)
+
+del has_motor

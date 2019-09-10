@@ -4,7 +4,6 @@ import dask.array as da
 import pytest
 import xarray
 
-
 ds = xarray.Dataset(
     coords={"x": (("x",), [1, 2]), "x2": (("x",), [3, 4]), "x3": (("x",), [5, 6])},
     data_vars={
