@@ -12,6 +12,7 @@ Current Features
 ----------------
 - Synchronous operations with PyMongo
 - asyncio support with Motor
+- Units annotation with Pint
 - Delayed put/get of xarray objects backed by dask.
   Only metadata and numpy-backed variables (e.g. indices) are written and read
   back at the time of graph definition.
@@ -22,4 +23,3 @@ Current Features
 Upcoming Features
 -----------------
 - sparse arrays
-- units annotation with Pint
