@@ -1,5 +1,3 @@
-import uuid
-
 import bson
 import pytest
 import xarray
@@ -7,18 +5,9 @@ import xarray
 from xarray_mongodb import DocumentNotFoundError
 
 from .data import ds, expect_chunks, expect_meta, parametrize_roundtrip
+from .fixtures import sync_xdb
 
-
-@pytest.fixture
-def xdb():
-    import pymongo
-    from xarray_mongodb import XarrayMongoDB
-
-    client = pymongo.MongoClient()
-    dbname = "test_xarray_mongodb"
-    coll = str(uuid.uuid4())
-    yield XarrayMongoDB(client[dbname], coll)
-    client.drop_database(dbname)
+xdb = pytest.fixture(sync_xdb)
 
 
 @parametrize_roundtrip

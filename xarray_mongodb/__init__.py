@@ -29,6 +29,6 @@ except ImportError:
 if has_motor:
     from .asyncio import XarrayMongoDBAsyncIO  # noqa: F401
 
-    __all__ = __all__ + ("XarrayMongoDBAsyncIO",)
+    __all__ = __all__ + ("XarrayMongoDBAsyncIO",)  # type: ignore
 
 del has_motor

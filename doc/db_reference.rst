@@ -25,7 +25,6 @@ follows::
         'coords': bson.SON(...),
         'data_vars': bson.SON(...),
         'name': '<str>' (optional),
-        'units': '<str>' (optional),
     }
 
 Where:
@@ -35,19 +34,14 @@ Where:
   the same order as the :class:`collections.OrderedDict` objects in the
   xarray object.
 - ``attrs`` are the ``Dataset.attrs``, in native MongoDB format. Python object
-  types that are not recognized by PyMongo are not supported. When storing a
-  :class:`xarray.DataArray`, they're always an empty dictionary.
+  types that are not recognized by PyMongo are not supported.
 - chunkSize is the number of bytes stored at most in each document in the
   ``<prefix>.chunks`` collection. This is not to be confused with dask chunk
   size; for each dask chunk there are one or more MongoDB documents in the
   ``<prefix>.chunks`` collection (see later).
 - ``name`` is the ``DataArray.name``; omit for unnamed arrays and Datasets.
-- ``units`` is the string representation of ``pint.UnitRegistry().Unit``, e.g.
-  ``kg * m /s ** 2``. The exact meaning of each symbol is deliberately omitted here and
-  remitted to pint (or whatever other engine is used to handle units of measures).
-  Omit for unit-less objects.
 - ``coords`` and ``data_vars`` contain one key/value pair for every
-  xarray variable, where the key is the variable name and the value is a dict
+  :class:`xarray.Variable`, where the key is the variable name and the value is a dict
   defined as follows::
 
     {
@@ -57,6 +51,7 @@ Where:
         'shape': [4, 4],
         'type': <'ndarray'|'COO'>,
         'fill_value': <bytes> (optional),
+        'units': '<str>' (optional),
      }
 
   - ``chunks`` are the dask chunk sizes at the moment of storing the array, or None if
@@ -70,14 +65,19 @@ Where:
     It is a bytes buffer in little endian encoding of as many bytes as implied by dtype.
     This format allows encoding dtypes that are not native to MongoDB, e.g. complex
     numbers. Omit when type=ndarray.
+  - ``units`` is the string representation of ``pint.UnitRegistry().Unit``, e.g.
+    ``kg * m /s ** 2``. The exact meaning of each symbol is deliberately omitted here
+    and remitted to pint (or whatever other engine is used to handle units of measures).
+    Omit for unit-less objects.
 
-  :class:`xarray.DataArray` objects are identifiable by having exactly one
-  variable in ``data_vars``, named ``__DataArray__``.
+:class:`xarray.DataArray` objects are identifiable by having exactly one
+variable in ``data_vars``, conventionally named ``__DataArray__``.
 
 .. note::
-   When dealing with dask variables, both chunks and shape may contain NaN instead of
-   integer sizes when the variable size is unknown at the moment of graph definition.
-   Likewise, the dtype, type, and fill_value may potentially be wrong.
+   When dealing with dask variables, ``shape`` and/or ``chunks`` may contain NaN instead
+   of integer sizes when the variable size is unknown at the moment of graph definition.
+   Also, ``dtype``, ``type``, ``fill_value``, and ``units`` may potentially be wrong in
+   the ``meta`` document and may be overridden by the ``chunks`` documents (see below).
 
 
 xarray.chunks
@@ -102,6 +102,9 @@ Each document is formatted as follows::
             'coords': <bytes>',
             'nnz': <int>,
             'fill_value': <bytes>,
+
+            # For pint only; omit for unit-less arrays
+            'units': <str>
         }
 
 Where:
@@ -119,6 +122,9 @@ Where:
 - ``type`` is the raw array type; ``ndarray`` for dense arrays; ``COO`` for sparse ones.
   It may be mismatched with, and overrides, the one defined in the ``meta`` collection.
 - ``data`` is the raw numpy buffer, in row-major (C) order and little endian encoding.
+- ``units`` is the string representation of ``pint.UnitRegistry().Unit``, e.g.
+  ``kg * m /s ** 2``. Omit for unit-less objects.
+  It may be mismatched with, and overrides, the one defined in the ``meta`` collection.
 
 Since numpy arrays and dask chunks can be larger than the maximum size a MongoDB
 document can hold (typically 16MB), each numpy array or dask chunk may be split across

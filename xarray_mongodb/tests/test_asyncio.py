@@ -1,4 +1,4 @@
-import uuid
+import asyncio
 
 import bson
 import pytest
@@ -8,6 +8,9 @@ from xarray_mongodb import DocumentNotFoundError
 
 from . import requires_motor
 from .data import ds, expect_chunks, expect_meta, parametrize_roundtrip
+from .fixtures import async_xdb
+
+xdb = pytest.fixture(async_xdb)
 
 
 @pytest.yield_fixture()
@@ -16,21 +19,7 @@ def event_loop():
     happens *after* the fixtures are applied, which causes the AsyncIOMotorClient to be
     attached to the wrong event loop
     """
-    import asyncio
-
     yield asyncio.get_event_loop()
-
-
-@pytest.fixture
-async def xdb():
-    import motor.motor_asyncio
-    from xarray_mongodb import XarrayMongoDBAsyncIO
-
-    client = motor.motor_asyncio.AsyncIOMotorClient()
-    dbname = "test_xarray_mongodb"
-    coll = str(uuid.uuid4())
-    yield XarrayMongoDBAsyncIO(client[dbname], coll)
-    await client.drop_database(dbname)
 
 
 @requires_motor

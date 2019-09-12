@@ -7,13 +7,9 @@ import pymongo.database
 import xarray
 from dask.delayed import Delayed
 
-from .common import (
-    CHUNK_SIZE_BYTES_DEFAULT,
-    CHUNKS_INDEX,
-    CHUNKS_PROJECT,
-    XarrayMongoDBCommon,
-)
+from .common import CHUNK_SIZE_BYTES_DEFAULT, CHUNKS_INDEX, XarrayMongoDBCommon
 from .errors import DocumentNotFoundError
+from .nep18 import UnitRegistry
 
 
 class XarrayMongoDB(XarrayMongoDBCommon):
@@ -29,6 +25,16 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         Size of the payload in a document in the chunks collection. Not to be confused
         with dask chunks. dask chunks that are larger than chunk_size_bytes will be
         transparently split across multiple MongoDB documents.
+    :param pint.registry.UnitRegistry ureg:
+        pint registry to allow putting and getting arrays with units.
+        If omitted, it defaults to the global registry defined with
+        :func:`pint.set_application_registry`. If the global registry was never set, it
+        defaults to a standard registry built with :file:`defaults_en.txt`.
+
+        .. note::
+           Users of dask.distributed, or in general anybody who wants to pickle the dask
+           graph, should never set this parameter and always use
+           :func:`pint.set_application_registry` instead.
     """
 
     def __init__(
@@ -36,9 +42,9 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         database: pymongo.database.Database,
         collection: str = "xarray",
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
+        ureg: UnitRegistry = None,
     ):
-        super().__init__(database, collection, chunk_size_bytes)
-        self._has_index = False
+        super().__init__(database, collection, chunk_size_bytes, ureg)
 
     def _create_index(self) -> None:
         """Create the index on the 'chunk' collection
@@ -144,5 +150,5 @@ class XarrayMongoDB(XarrayMongoDBCommon):
             raise DocumentNotFoundError(_id)
         load_norm = self._normalize_load(meta, load)
         chunks_query = self._chunks_query(meta, load_norm)
-        chunks = list(self.chunks.find(chunks_query, CHUNKS_PROJECT))
+        chunks = list(self.chunks.find(chunks_query))
         return self._docs_to_dataset(meta, chunks, load_norm)

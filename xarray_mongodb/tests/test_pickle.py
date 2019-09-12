@@ -10,24 +10,15 @@ import os.path
 import pickle
 import subprocess
 import sys
-import uuid
 
 import pytest
 import xarray
 
+from .fixtures import sync_xdb
+
+xdb = pytest.fixture(sync_xdb)
+
 LOAD_PICKLE = os.path.join(os.path.dirname(__file__), "load_pickle.py")
-
-
-@pytest.fixture
-def xdb():
-    import pymongo
-    from xarray_mongodb import XarrayMongoDB
-
-    client = pymongo.MongoClient()
-    dbname = "test_xarray_mongodb"
-    coll = str(uuid.uuid4())
-    yield XarrayMongoDB(client[dbname], coll)
-    client.drop_database(dbname)
 
 
 def test_pickle(xdb, tmpdir):

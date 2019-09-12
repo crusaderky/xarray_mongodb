@@ -1,7 +1,7 @@
-.. _installing:
-
 Installation
 ============
+
+.. _dependencies:
 
 Required dependencies
 ---------------------
@@ -14,19 +14,19 @@ Required dependencies
 Optional dependencies
 ---------------------
 - `Motor <https://motor.readthedocs.io//>`_ for asyncio support
+- `Pint <https://pint.readthedocs.io/en/0.9/>`_
+- `Sparse <https://sparse.pydata.org/en/latest/>`_ *(support not yet implemented)*
 
-..
-    TODO
-    - `Pint <https://pint.readthedocs.io/en/0.9/>`_
-    - `Sparse <https://sparse.pydata.org/en/latest/>`_
+.. note::
+   Pint and Sparse require:
 
-    .. note::
-       Pint and Sparse require:
+   - numpy =1.16 and the environment variable ``NUMPY_EXPERIMENTAL_ARRAY_FUNCTION=1``,
+     or numpy >=1.17
+   - xarray >=0.13
+   - dask >= 2.0
 
-       - numpy =1.16 and the environment variable ``NUMPY_EXPERIMENTAL_ARRAY_FUNCTION=1``,
-         or numpy >=1.17
-       - xarray >=0.13
 
+.. _build_sphinx:
 
 Sphinx documentation
 --------------------
@@ -41,6 +41,8 @@ To build the Sphinx documentation:
      export PYTHONPATH=$PWD
      sphinx-build -n -j auto -b html -d build/doctrees doc build/html
 
+
+.. _run_tests:
 
 Testing
 -------

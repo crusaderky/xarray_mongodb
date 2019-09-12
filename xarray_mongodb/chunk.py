@@ -10,10 +10,11 @@ import pymongo
 from bson import ObjectId
 
 from .errors import DocumentNotFoundError
+from .nep18 import EagerArray, Quantity, UnitRegistry
 
 
 def mongodb_put_array(
-    array: np.ndarray,
+    array: EagerArray,
     coll: pymongo.collection.Collection,
     meta_id: ObjectId,
     name: str,
@@ -38,16 +39,18 @@ def mongodb_get_array(
     meta_id: ObjectId,
     name: str,
     chunk: Optional[Tuple[int, ...]],
-) -> np.ndarray:
-    """Insert a single chunk into MongoDB
+    ureg: UnitRegistry = None,
+) -> EagerArray:
+    """Load all MongoDB documents making up a dask chunk and assemble them into
+    an array
     """
     find_key = {"meta_id": meta_id, "name": name, "chunk": chunk}
     docs = list(coll.find(find_key, {"dtype": 1, "shape": 1, "data": 1}).sort("n"))
-    return docs_to_array(docs, find_key)
+    return docs_to_array(docs, find_key, ureg)
 
 
 def array_to_docs(
-    array: np.ndarray,
+    array: EagerArray,
     meta_id: ObjectId,
     name: str,
     chunk: Optional[Tuple[int, ...]],
@@ -56,10 +59,17 @@ def array_to_docs(
     """Convert a numpy array to a list of MongoDB documents ready to be inserted into
     the 'chunks' collection
     """
+    units: Optional[str]
+    if isinstance(array, Quantity):
+        array, units = array.magnitude, str(array.units)
+    else:
+        units = None
+    array = np.asarray(array)
+
     buffer = array.tobytes()
     # Guarantee at least one document in case of size 0
     buflen = max(len(buffer), 1)
-    return [
+    out = [
         {
             "meta_id": meta_id,
             "name": name,
@@ -72,9 +82,15 @@ def array_to_docs(
         }
         for n, offset in enumerate(range(0, buflen, chunk_size_bytes))
     ]
+    if units:
+        for doc in out:
+            doc["units"] = units
+    return out
 
 
-def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
+def docs_to_array(
+    docs: List[dict], find_key: dict, ureg: UnitRegistry = None
+) -> EagerArray:
     """Convert a list of MongoDB documents from the 'chunks' collection into a numpy
     array.
 
@@ -82,6 +98,9 @@ def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
         MongoDB documents. Must be already sorted by 'n'.
     :param dict find_key:
         tag to use when raising DocumentNotFoundError
+    :param pint.registry.UnitRegistry ureg:
+        pint registry to use when the 'units' key is found. Omit to use the global one
+        defined by :func:`pint.set_application_registry`.
     :raises DocumentNotFoundError:
         No documents, or one or more documents are missing
         """
@@ -90,6 +109,7 @@ def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
     buffer = b"".join([doc["data"] for doc in docs])
     dtype = docs[0]["dtype"]
     shape = docs[0]["shape"]
+    units = docs[0].get("units")
 
     # In case of a missing chunk,
     # - if bytes_per_chunk is not an exact multiple of dtype.size, np.frombuffer crashes
@@ -97,7 +117,16 @@ def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
     # - if bytes_per_chunk is an exact multiple of dtype.size, ndarray.reshape crashes
     #   with 'ValueError: cannot reshape array of size 1 into shape (1,2)'
     try:
-        return np.frombuffer(buffer, dtype).reshape(shape)
+        out = np.frombuffer(buffer, dtype).reshape(shape)
     except ValueError as e:
         # Missing some chunks
         raise DocumentNotFoundError(find_key) from e
+
+    if units:
+        if ureg is None:
+            import pint
+
+            ureg = pint._APP_REGISTRY
+
+        out = ureg.Quantity(out, units)
+    return out

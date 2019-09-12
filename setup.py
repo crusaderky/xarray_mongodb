@@ -43,7 +43,7 @@ EXTRAS_REQUIRE = {
     "pint": ["pint >= 0.9", "numpy >= 1.16", "xarray > 0.12.3"],
     "sparse": ["sparse >= 0.8", "numpy >= 1.16", "xarray > 0.12.3"],
 }
-TESTS_REQUIRE = ["pytest >= 3.6", "pytest-asyncio >= 0.10"]
+TESTS_REQUIRE = ["pytest >= 3.7", "pytest-asyncio >= 0.10"]
 
 DESCRIPTION = "xarray_mongodb"
 LONG_DESCRIPTION = """

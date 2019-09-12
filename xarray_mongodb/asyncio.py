@@ -8,13 +8,9 @@ import motor.motor_asyncio
 import xarray
 from dask.delayed import Delayed
 
-from .common import (
-    CHUNK_SIZE_BYTES_DEFAULT,
-    CHUNKS_INDEX,
-    CHUNKS_PROJECT,
-    XarrayMongoDBCommon,
-)
+from .common import CHUNK_SIZE_BYTES_DEFAULT, CHUNKS_INDEX, XarrayMongoDBCommon
 from .errors import DocumentNotFoundError
+from .nep18 import UnitRegistry
 
 
 class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
@@ -26,16 +22,19 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         See :class:`~xarray_mongodb.XarrayMongoDB`
     :param int chunk_size_bytes:
         See :class:`~xarray_mongodb.XarrayMongoDB`
+    :param pint.registry.UnitRegistry ureg:
+        See :class:`~xarray_mongodb.XarrayMongoDB`
     """
 
+    # This method is just for overriding the typing annotation of database
     def __init__(
         self,
         database: motor.motor_asyncio.AsyncIOMotorDatabase,
         collection: str = "xarray",
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
+        ureg: UnitRegistry = None,
     ):
-        super().__init__(database, collection, chunk_size_bytes)
-        self._has_index = False
+        super().__init__(database, collection, chunk_size_bytes, ureg)
 
     async def _create_index(self) -> None:
         """Create the index on the 'chunk' collection
@@ -74,6 +73,6 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         load_norm = self._normalize_load(meta, load)
         chunks_query = self._chunks_query(meta, load_norm)
 
-        chunks = await self.chunks.find(chunks_query, CHUNKS_PROJECT).to_list(None)
+        chunks = await self.chunks.find(chunks_query).to_list(None)
         await index_task
         return self._docs_to_dataset(meta, chunks, load_norm)

@@ -22,14 +22,13 @@ import dask.base
 import dask.core
 import dask.highlevelgraph
 from dask.delayed import Delayed
-import numpy
 import pymongo
 import xarray
 
 from . import chunk
+from .nep18 import EagerArray, UnitRegistry, get_units
 
 CHUNKS_INDEX = [("meta_id", 1), ("name", 1), ("chunk", 1)]
-CHUNKS_PROJECT = {"name": 1, "chunk": 1, "n": 1, "dtype": 1, "shape": 1, "data": 1}
 CHUNK_SIZE_BYTES_DEFAULT = 255 * 1024
 
 
@@ -57,17 +56,47 @@ class XarrayMongoDBCommon:
         Size of the payload in a document in the chunks collection. Not to be confused
         with dask chunks. dask chunks that are larger than chunk_size_bytes will be
         transparently split across multiple MongoDB documents.
+    :param pint.unitregistry.UnitRegistry ureg:
+        pint registry to allow putting and getting arrays with units.
     """
+
+    chunk_size_bytes: int
+    _ureg: Optional[UnitRegistry]
+    _has_index: bool
 
     def __init__(
         self,
         database,
-        collection: str = "xarray",
-        chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
+        collection: str,
+        chunk_size_bytes: int,
+        ureg: Optional[UnitRegistry],
     ):
         self.meta = database[collection].meta
         self.chunks = database[collection].chunks
         self.chunk_size_bytes = chunk_size_bytes
+        self._ureg = ureg
+        self._has_index = False
+
+    @property
+    def ureg(self) -> UnitRegistry:
+        """Return:
+
+        1. the registry that was defined in ``__init__``
+        2. if it was omitted, the global registry defined with
+           :func:`pint.set_application_registry`
+        3. if the global registry was never set, a standard registry built with
+           :file:`defaults_en.txt`
+        """
+        if self._ureg is not None:
+            return self._ureg
+
+        import pint
+
+        return pint._APP_REGISTRY
+
+    @ureg.setter
+    def ureg(self, value: Optional[UnitRegistry]) -> None:
+        self._ureg = value
 
     def _dataset_to_meta(self, x: Union[xarray.DataArray, xarray.Dataset]) -> dict:
         """Helper function of put().
@@ -85,15 +114,19 @@ class XarrayMongoDBCommon:
                 meta["name"] = x.name
             x = x.to_dataset(name="__DataArray__")
 
-        for coll in ("coords", "data_vars"):
-            for k, v in getattr(x, coll).items():
-                meta[coll][k] = {
-                    "dims": v.dims,
-                    "dtype": v.dtype.str,
-                    "shape": v.shape,
-                    "chunks": v.chunks,
-                    "type": "ndarray",
-                }
+        for k, v in x.variables.items():
+            subdoc = meta["coords"] if k in x.coords else meta["data_vars"]
+            subdoc[k] = {
+                "dims": v.dims,
+                "dtype": v.dtype.str,
+                "shape": v.shape,
+                "chunks": v.chunks,
+                "type": "ndarray",
+            }
+            units = get_units(v)
+            if units:
+                subdoc[k]["units"] = units
+
         return meta
 
     def _dataset_to_chunks(
@@ -129,8 +162,7 @@ class XarrayMongoDBCommon:
         dependencies = {}  # type: Dict[str, Set[str]]
 
         for var_name, variable in x.variables.items():
-            graph = variable.__dask_graph__()
-            if graph:
+            if variable.__dask_graph__():
                 put_keys, put_graph = self._delayed_put(
                     meta_id, str(var_name), variable
                 )
@@ -139,7 +171,9 @@ class XarrayMongoDBCommon:
                 dependencies.update(put_graph.dependencies)
             else:
                 chunks += chunk.array_to_docs(
-                    variable.values,
+                    # Variable.data, unlike Variable.values, preserves pint.Quantity
+                    # and sparse.COO objects
+                    variable.data,
                     meta_id=meta_id,
                     name=str(var_name),
                     chunk=None,
@@ -166,7 +200,7 @@ class XarrayMongoDBCommon:
 
         :returns: tuple of dask keys, layers, dependencies
         """
-        coll = ensure_pymongo(self.chunks)
+        coll: pymongo.collection.Collection = ensure_pymongo(self.chunks)
         name = "mongodb_put_array-" + dask.base.tokenize(coll, meta_id, var_name, var)
         dsk = {}
         keys = []
@@ -244,10 +278,11 @@ class XarrayMongoDBCommon:
         """
         chunks.sort(key=lambda doc: (doc["name"], doc["chunk"], doc["n"]))
 
-        # Convert list of docs into {var name: {chunk: numpy array}}
-        variables = defaultdict(
-            dict
-        )  # type: DefaultDict[str, Dict[Tuple[int, ...], numpy.array]]  # noqa: E501
+        # Convert list of docs into {var name: {chunk id: ndarray|COO|Quantity}}
+        variables: DefaultDict[
+            str, Dict[Optional[Tuple[int, ...]], EagerArray]
+        ] = defaultdict(dict)
+
         for (var_name, chunk_id), docs in groupby(
             chunks, lambda doc: (doc["name"], doc["chunk"])
         ):
@@ -256,6 +291,7 @@ class XarrayMongoDBCommon:
             array = chunk.docs_to_array(
                 list(docs),
                 {"meta_id": meta["_id"], "name": var_name, "chunk": chunk_id},
+                ureg=self._ureg,
             )
             variables[var_name][chunk_id] = array
 
@@ -263,7 +299,7 @@ class XarrayMongoDBCommon:
             for var_name, var_meta in meta[where].items():
                 if var_name in load:
                     assert var_name in variables, var_name
-                    array = self._build_numpy_array(var_meta, variables[var_name])
+                    array = self._build_eager_array(var_meta, variables[var_name])
                 else:
                     assert var_name not in variables
                     array = self._build_dask_array(var_meta, var_name, meta["_id"])
@@ -282,18 +318,21 @@ class XarrayMongoDBCommon:
         return ds
 
     @staticmethod
-    def _build_numpy_array(meta: dict, chunks: dict) -> numpy.ndarray:
-        """Build a numpy array from meta-data and chunks
+    def _build_eager_array(
+        meta: dict, chunks: Dict[Optional[Tuple[int, ...]], EagerArray]
+    ) -> EagerArray:
+        """Build an in-memory array (np.ndarray, sparse.COO, or pint.Quantity wrapping
+        one of the previous two) from meta-data and chunks
 
         :param dict meta:
             sub-document from the 'meta' collection under the 'coords' or 'data_vars'
             key
         :param dict chunks:
-            ``{chunk id: numpy.ndarray}`` where chunk id is a tuple e.g. ``(0, 0, 0)``
-            if the variable was backed by dask when it was stored, or None if it was
-            backed by numpy.
+            ``{chunk id: ndarray|COO|Quantity}``, where chunk id is a tuple e.g.
+            ``(0, 0, 0)`` if the variable was backed by dask when it was stored, or None
+            otherwise.
         """
-        # Convert to numpy.ndarray
+        # Convert to ndarray
         if meta["chunks"] is None:
             assert len(chunks) == 1
             # chunks=None or single chunk
@@ -301,7 +340,10 @@ class XarrayMongoDBCommon:
 
         # variable was backed by dask and split in multiple chunks
         # at the moment of calling put()
-        dsk = {("stub",) + chunk_id: array for chunk_id, array in chunks.items()}
+        dsk = {
+            ("stub",) + cast(tuple, chunk_id): array
+            for chunk_id, array in chunks.items()
+        }
         array = dask.array.Array(
             dsk,
             name="stub",
@@ -324,17 +366,21 @@ class XarrayMongoDBCommon:
         :param bson.ObjectId meta_id:
             Id of the document from the 'meta' collection
         """
-        coll = ensure_pymongo(self.chunks)
+        coll: pymongo.collection.Collection = ensure_pymongo(self.chunks)
         dsk_name = "mongodb_get_array-" + dask.base.tokenize(coll, meta_id, name)
 
+        chunks: Union[tuple, int, float]
         if meta["chunks"] is None:
-            chunks = -1  # type: Union[tuple, int, float]
+            chunks = -1
         else:
             chunks = chunks_lists_to_tuples(meta["chunks"])
 
         array = dask.array.Array(
             {}, name=dsk_name, shape=meta["shape"], chunks=chunks, dtype=meta["dtype"]
         )
+        if hasattr(array, "_meta"):  # dask >= 2.0
+            if "units" in meta:
+                array._meta = self.ureg.Quantity(array._meta, meta["units"])
 
         for key in dask.core.flatten(array.__dask_keys__()):
             load_func = partial(
@@ -345,6 +391,7 @@ class XarrayMongoDBCommon:
                 # Note: 'meta["chunks"] is not None' handles the special case of
                 # dask array with shape=()
                 chunk=key[1:] if meta["chunks"] is not None else None,
+                ureg=self._ureg,
             )
 
             # See dask.highlevelgraph.HighLevelGraph
