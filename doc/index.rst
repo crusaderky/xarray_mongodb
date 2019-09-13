@@ -34,6 +34,8 @@ Limitations
 -----------
 - The Motor Tornado driver is not supported due to lack of developer
   interest - submissions are welcome.
+- At the moment of writing, Dask and Pint are not supported at the same time due to
+  limitations in the Pint and xarray packages.
 - ``attrs`` are limited to the data types natively accepted by PyMongo
 - Non-string xarray dimensions and variable names are not supported
 

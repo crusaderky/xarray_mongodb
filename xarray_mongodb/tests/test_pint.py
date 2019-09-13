@@ -42,8 +42,8 @@ def ureg_custom_global():
     pint.set_application_registry(prev)
 
 
-def sample_data(ureg, chunk=False):
-    out = xarray.Dataset(
+def sample_data(ureg):
+    return xarray.Dataset(
         coords={
             # As of xarray 0.13, can't assign units to IndexVariables
             "x": ((), ureg.Quantity(123, "kg")),
@@ -51,12 +51,6 @@ def sample_data(ureg, chunk=False):
         },
         data_vars={"d": (("dim_0",), ureg.Quantity([3, 4], "s"))},
     )
-    if chunk:
-        # Dataset.chunk() is broken for 2+ chunks
-        # TODO link
-        for k, v in out.variables.items():
-            out[k] = (v.dims, da.from_array(v.data, asarray=False, chunks=1))
-    return out
 
 
 @requires_pint
@@ -267,10 +261,10 @@ def custom_units(ureg, ureg_custom, xdb):
         pint.set_application_registry(ureg)
 
 
-@pytest.mark.xfail(reason="dask+pint broken upstream: pint#878")
+@pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
 @requires_pint
 def test_dask(ureg, xdb):
-    a = sample_data(ureg, chunk=True)
+    a = sample_data(ureg).chunk(1)
     _id, future = xdb.put(a)
     future.compute()
     b = xdb.get(_id)
@@ -282,10 +276,10 @@ def test_dask(ureg, xdb):
         assert b[k].compute().data.units == v.compute().data.units
 
 
-@pytest.mark.xfail(reason="dask+pint broken upstream: pint#878")
+@pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
 @requires_pint
 def test_pickle(ureg, xdb):
-    a = sample_data(ureg, chunk=True)
+    a = sample_data(ureg).chunk(1)
     _id, future = xdb.put(a)
     future = pickle.loads(pickle.dumps(future))
     future.compute()
@@ -294,7 +288,7 @@ def test_pickle(ureg, xdb):
     xarray.testing.assert_identical(a, b)
 
 
-@pytest.mark.xfail(reason="dask+pint broken upstream: pint#878")
+@pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
 @requires_pint
 def test_pickle_custom_units(ureg, ureg_custom_global, xdb):
     q = ureg_custom_global.Quantity([1, 2], "test_unit")
