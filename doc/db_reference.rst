@@ -8,8 +8,7 @@ split across two collections, ``<prefix>.meta`` and ``<prefix>.chunks``. By
 default, these are ``xarray.meta`` and ``xarray.chunks``.
 
 .. note::
-   At the moment of writing, support for units and sparse arrays has not been
-   implemented yet.
+   At the moment of writing, support for sparse arrays has not been implemented yet.
 
 
 xarray.meta
