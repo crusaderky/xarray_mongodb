@@ -10,7 +10,6 @@ from xarray_mongodb import XarrayMongoDB
 from . import requires_motor, requires_pint
 from .fixtures import sync_xdb
 
-pint = pytest.importorskip("pint")
 xdb = pytest.fixture(sync_xdb)
 
 
@@ -143,7 +142,6 @@ def test_db_contents(ureg, xdb):
             "name": "d",
             "shape": [2],
             "type": "ndarray",
-            "units": "second",
         },
         {
             "chunk": None,
@@ -154,7 +152,6 @@ def test_db_contents(ureg, xdb):
             "name": "x",
             "shape": [],
             "type": "ndarray",
-            "units": "kilogram",
         },
         {
             "chunk": None,
@@ -165,7 +162,6 @@ def test_db_contents(ureg, xdb):
             "name": "y",
             "shape": [2],
             "type": "ndarray",
-            "units": "meter",
         },
     ]
 
@@ -274,32 +270,3 @@ def test_dask(ureg, xdb):
         assert b[k].chunks == v.chunks
         assert b[k].data._meta.units == v.data._meta.units
         assert b[k].compute().data.units == v.compute().data.units
-
-
-@pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
-@requires_pint
-def test_pickle(ureg, xdb):
-    a = sample_data(ureg).chunk(1)
-    _id, future = xdb.put(a)
-    future = pickle.loads(pickle.dumps(future))
-    future.compute()
-    b = xdb.get(_id)
-    b = pickle.loads(pickle.dumps(b))
-    xarray.testing.assert_identical(a, b)
-
-
-@pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
-@requires_pint
-def test_pickle_custom_units(ureg, ureg_custom_global, xdb):
-    q = ureg_custom_global.Quantity([1, 2], "test_unit")
-    a = xarray.DataArray(q).chunk(1)
-
-    assert str(a.data.units) == "test_unit"
-    xarray.testing.assert_identical(a, pickle.loads(pickle.dumps(a)))
-
-    _id, future = xdb.put(a)
-    future = pickle.loads(pickle.dumps(future))
-    future.compute()
-    b = xdb.get(_id)
-    b = pickle.loads(pickle.dumps(b))
-    xarray.testing.assert_identical(a, b)

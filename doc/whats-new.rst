@@ -7,6 +7,9 @@ What's New
 
 v0.1.1 (unreleased)
 -------------------
+- **Database structure change**: removed 'units' field from ``xarray.chunks`` collection.
+  pint must always wrap around dask, and not the other way around. Note that, at the moment
+  of writing, xarray->pint->dask is broken upstream.
 
 
 .. _whats-new.0.1.0:

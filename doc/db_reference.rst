@@ -64,7 +64,7 @@ Where:
     It is a bytes buffer in little endian encoding of as many bytes as implied by dtype.
     This format allows encoding dtypes that are not native to MongoDB, e.g. complex
     numbers. Omit when type=ndarray.
-  - ``units`` is the string representation of ``pint.UnitRegistry().Unit``, e.g.
+  - ``units`` is the string representation of :class:`pint.Unit`, e.g.
     ``kg * m /s ** 2``. The exact meaning of each symbol is deliberately omitted here
     and remitted to pint (or whatever other engine is used to handle units of measures).
     Omit for unit-less objects.
@@ -75,8 +75,8 @@ variable in ``data_vars``, conventionally named ``__DataArray__``.
 .. note::
    When dealing with dask variables, ``shape`` and/or ``chunks`` may contain NaN instead
    of integer sizes when the variable size is unknown at the moment of graph definition.
-   Also, ``dtype``, ``type``, ``fill_value``, and ``units`` may potentially be wrong in
-   the ``meta`` document and may be overridden by the ``chunks`` documents (see below).
+   Also, ``dtype``, ``type``, and ``fill_value`` may potentially be wrong in the
+   ``meta`` document and may be overridden by the ``chunks`` documents (see below).
 
 
 xarray.chunks
@@ -101,9 +101,6 @@ Each document is formatted as follows::
             'coords': <bytes>',
             'nnz': <int>,
             'fill_value': <bytes>,
-
-            # For pint only; omit for unit-less arrays
-            'units': <str>
         }
 
 Where:
@@ -121,9 +118,6 @@ Where:
 - ``type`` is the raw array type; ``ndarray`` for dense arrays; ``COO`` for sparse ones.
   It may be mismatched with, and overrides, the one defined in the ``meta`` collection.
 - ``data`` is the raw numpy buffer, in row-major (C) order and little endian encoding.
-- ``units`` is the string representation of ``pint.UnitRegistry().Unit``, e.g.
-  ``kg * m /s ** 2``. Omit for unit-less objects.
-  It may be mismatched with, and overrides, the one defined in the ``meta`` collection.
 
 Since numpy arrays and dask chunks can be larger than the maximum size a MongoDB
 document can hold (typically 16MB), each numpy array or dask chunk may be split across

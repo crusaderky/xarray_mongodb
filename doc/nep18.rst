@@ -23,7 +23,7 @@ data types that are possible thanks to NEP18. Namely,
 - A :class:`xarray.Variable` can directly wrap:
 
   - a :class:`numpy.ndarray`, or
-  - a :class:`pint.quantity._Quantity`, or
+  - a :class:`pint.Quantity`, or
   - a :class:`sparse.COO`, or
   - a :class:`dask.array.Array`.
 
@@ -33,7 +33,7 @@ data types that are possible thanks to NEP18. Namely,
      :class:`xarray.IndexVariable` wraps a :class:`pandas.Index`, but the ``.data``
      property converts it on the fly to a :class:`numpy.ndarray`.
 
-- A :class:`pint.quantity._Quantity` can directly wrap:
+- A :class:`pint.Quantity` can directly wrap:
 
   - a :class:`numpy.ndarray`, or
   - a :class:`sparse.COO`, or
@@ -66,7 +66,7 @@ Worst case
 The most complicated use case that xarray_mongodb has to deal with is
 
 1. a :class:`xarray.Variable`, which wraps around
-2. a :class:`pint.quantity._Quantity`, which wraps around
+2. a :class:`pint.Quantity`, which wraps around
 3. a :class:`dask.array.Array`, which wraps around
 4. a :class:`sparse.COO`, which is built on top of
 5. two :class:`numpy.ndarray`.

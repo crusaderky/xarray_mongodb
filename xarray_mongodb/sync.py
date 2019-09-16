@@ -30,11 +30,6 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         If omitted, it defaults to the global registry defined with
         :func:`pint.set_application_registry`. If the global registry was never set, it
         defaults to a standard registry built with :file:`defaults_en.txt`.
-
-        .. note::
-           Users of dask.distributed, or in general anybody who wants to pickle the dask
-           graph, should never set this parameter and always use
-           :func:`pint.set_application_registry` instead.
     """
 
     def __init__(
