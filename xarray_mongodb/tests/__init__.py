@@ -73,16 +73,12 @@ def _import_or_skip(*args, nep18: bool = False):
 
 has_motor, requires_motor = _import_or_skip(("motor", "2.0"))
 has_pint, requires_pint = _import_or_skip(
-    ("pint", "0.9"),
-    ("numpy", "0.16"),
-    ("dask", "2.0"),
-    ("xarray", "0.12.3+85"),
-    nep18=True,
+    ("pint", "0.9"), ("numpy", "0.17"), ("dask", "2.0"), ("xarray", "0.13"), nep18=True
 )
 has_sparse, requires_sparse = _import_or_skip(
     ("sparse", "0.8"),
-    ("numpy", "0.16"),
+    ("numpy", "0.17"),
     ("dask", "2.0"),
-    ("xarray", "0.12.3+85"),
+    ("xarray", "0.13"),
     nep18=True,
 )

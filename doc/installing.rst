@@ -8,6 +8,7 @@ Required dependencies
 - Python 3.6 or later
 - `xarray <http://xarray.pydata.org>`_
 - `dask <https://dask.org/>`_
+- `toolz <https://toolz.readthedocs.io/>`_
 - `PyMongo <https://api.mongodb.com/python/current/>`_
 
 
@@ -17,13 +18,31 @@ Optional dependencies
 - `Pint <https://pint.readthedocs.io/en/0.9/>`_
 - `Sparse <https://sparse.pydata.org/en/latest/>`_ *(support not yet implemented)*
 
-.. note::
-   Pint and Sparse require:
 
-   - numpy =1.16 and the environment variable ``NUMPY_EXPERIMENTAL_ARRAY_FUNCTION=1``,
-     or numpy >=1.17
-   - xarray >=0.13
-   - dask >= 2.0
+.. _mindeps_policy:
+
+Minimum dependency versions
+---------------------------
+xarray_mongodb adopts a rolling policy regarding the minimum supported versions of its
+dependencies:
+
+- **Python:** 42 months
+  (`NEP-29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_)
+- **numpy:** 24 months
+  (`NEP-29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_)
+- **pandas:** 12 months
+- **pint and sparse:** very latest available versions only, until the technology based
+  on `NEP-18 <https://numpy.org/neps/nep-0018-array-function-protocol.html>`_ will have
+  matured. This extends to all other libraries as well when one wants to use pint or
+  sparse.
+- **all other libraries:** 6 months
+
+You can see the actual minimum supported and tested versions:
+
+- `For using pint and/or sparse
+  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py36-min-nep18.yml>`_
+- `For everything else
+  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py36-min-all-deps.yml>`_
 
 
 .. _build_sphinx:

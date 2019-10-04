@@ -32,16 +32,17 @@ CLASSIFIERS = [
 ]
 
 INSTALL_REQUIRES = [
-    "numpy >= 1.13",
-    "pandas >= 0.21",
+    "numpy >= 1.14",
+    "pandas >= 0.24",
     "dask >= 1.1",
-    "xarray >= 0.10.4",
+    "xarray >= 0.11",
     "pymongo >= 3.7",
+    "toolz >= 0.8",  # Required by dask.delayed
 ]
 EXTRAS_REQUIRE = {
     "asyncio": ["motor >= 2.0"],
-    "pint": ["pint >= 0.9", "numpy >= 1.16", "xarray > 0.12.3"],
-    "sparse": ["sparse >= 0.8", "numpy >= 1.16", "xarray > 0.12.3"],
+    "pint": ["pint >= 0.9", "numpy >= 1.17", "xarray >= 0.13"],
+    "sparse": ["sparse >= 0.8", "numpy >= 1.17", "xarray >= 0.13"],
 }
 TESTS_REQUIRE = ["pytest >= 3.7", "pytest-asyncio >= 0.10"]
 
@@ -88,8 +89,7 @@ if not ISRELEASED:
     else:
         # have git, in git dir, but may have used a shallow clone (travis does
         # this)
-        rev = so.strip()
-        rev = rev.decode("ascii")
+        rev = so.strip().decode("ascii")
 
         if not rev.startswith("v") and re.match("[a-zA-Z0-9]{7,9}", rev):
             # partial clone, manually construct version string this is the format before

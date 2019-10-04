@@ -1,17 +1,21 @@
 name: test_env
 channels:
-  - anaconda
   - conda-forge
+  - anaconda
 dependencies:
   - python=3.7
+  - black
   - dask
-  - numpy>=1.17
-  - pint>=0.9
+  - flake8
+  # - motor  # Doesn't support Windows
+  - mypy
+  - numpy
+  - pandas
+  - pint
   - pymongo
   - pytest
   - pytest-asyncio
   - pytest-cov
-  - sparse>=0.8
+  - sparse
+  - toolz
   - xarray
-
-# Note: motor 2.0 doesn't support Windows

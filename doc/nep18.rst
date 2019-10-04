@@ -120,11 +120,14 @@ Legacy support
 --------------
 xarray_mongodb has to cope with a few caveats with legacy versions of its dependencies:
 
-- It requires numpy >= 1.13; however NEP18 was first introduced in version 1.16
+- It requires numpy >= 1.14; however NEP18 was first introduced in v1.16 and
+  consolidated in v1.17.
 - It requires dask >= 1.1; however the ``da.Array._meta`` property, which exposes
-  wrapped non-numpy objects, was not added until version 2.0.
-- It requires xarray >= 0.10.4; however NEP18 support was first introduced in version
+  wrapped non-numpy objects, was not added until v2.0.
+- It requires xarray >= 0.11; however NEP18 support was first introduced in version
   1.13.
 
 Hence, there is a set of minimum required versions when pint and sparse are not
 involved, and a different set of much more recent ones when they are.
+
+See also: :ref:`minversions`.

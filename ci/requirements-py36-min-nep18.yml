@@ -5,17 +5,17 @@ channels:
 dependencies:
   - python=3.6
   - black
-  - dask
+  - dask=2.0
   - flake8
-  - motor
+  - motor=2.0
   - mypy
-  - numpy
-  - pandas
-  - pint
-  - pymongo
+  - numpy=1.17
+  - pandas=0.24
+  - pint=0.9
+  - pymongo=3.7
   - pytest
   - pytest-asyncio
   - pytest-cov
-  - sparse
-  - toolz
-  - xarray
+  - sparse=0.8
+  - toolz=0.8
+  - xarray=0.13

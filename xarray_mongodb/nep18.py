@@ -2,7 +2,7 @@
 
 Please read :doc:`nep18`.
 """
-from typing import Any, Type
+from typing import Any, Callable
 
 
 __all__ = ("COO", "Quantity", "Unit", "UnitRegistry")
@@ -10,7 +10,7 @@ __all__ = ("COO", "Quantity", "Unit", "UnitRegistry")
 
 # sparse imports or dummies
 try:
-    from sparse import COO  # type: ignore
+    from sparse import COO
 
 except ImportError:
     # Dummy objects that are not equal to anything else and for which isinstance()
@@ -23,9 +23,9 @@ except ImportError:
 
 # pint imports or dummies
 try:
-    from pint.unit import _Unit as Unit  # type: ignore
-    from pint.quantity import _Quantity as Quantity  # type: ignore
-    from pint import UnitRegistry  # type: ignore
+    from pint.unit import _Unit as Unit
+    from pint.quantity import _Quantity as Quantity
+    from pint import UnitRegistry
 
 except ImportError:
 
@@ -40,12 +40,6 @@ except ImportError:
         def __init__(self, magnitude, units=None):
             raise NotImplementedError("STUB")
 
-    _Quantity = Quantity
-    _Unit = Unit
-
     class UnitRegistry:  # type: ignore
-        Quantity: Type[_Quantity]
-        Unit: Type[_Unit]
-
-    del _Quantity
-    del _Unit
+        Quantity: Callable[..., Quantity]
+        Unit: Callable[..., Unit]

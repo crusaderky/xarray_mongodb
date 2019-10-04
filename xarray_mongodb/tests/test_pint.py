@@ -1,5 +1,3 @@
-import pickle
-
 import dask.array as da
 import numpy as np
 import pytest
@@ -45,30 +43,28 @@ def sample_data(ureg):
     return xarray.Dataset(
         coords={
             # As of xarray 0.13, can't assign units to IndexVariables
-            "x": ((), ureg.Quantity(123, "kg")),
-            "y": (("dim_0",), ureg.Quantity([1, 2], "m")),
+            "x": ((), ureg.Quantity(np.array(123, dtype="i8"), "kg")),
+            "y": (("dim_0",), ureg.Quantity(np.array([1, 2], dtype="i8"), "m")),
         },
-        data_vars={"d": (("dim_0",), ureg.Quantity([3, 4], "s"))},
+        data_vars={"d": (("dim_0",), ureg.Quantity(np.array([3, 4], dtype="i8"), "s"))},
     )
 
 
 @requires_pint
 def test_ureg(ureg, ureg_custom, xdb):
-    """The only impact on sync.py and asyncio.py is on the ureg property. Everything
-    else is in common.py/chunks.py and can be just tested using the sync client.
-    """
-    from xarray_mongodb import XarrayMongoDBAsyncIO
+    from xarray_mongodb import XarrayMongoDB
 
     assert xdb.ureg is ureg
-    xdb_custom = XarrayMongoDBAsyncIO(xdb.meta.database, ureg=ureg_custom)
+    xdb_custom = XarrayMongoDB(xdb.meta.database, ureg=ureg_custom)
     assert xdb_custom.ureg is ureg_custom
 
 
 @requires_motor
 @requires_pint
 def test_ureg_motor(ureg, ureg_custom):
-    # The only impact on sync.py and asyncio.py is on the ureg property.
-    # Everything else can be just tested using the sync client.
+    """The only impact on sync.py and asyncio.py is on the ureg property. Everything
+    else is in common.py/chunks.py and can be just tested using the sync client.
+    """
     import motor.motor_asyncio
     from xarray_mongodb import XarrayMongoDBAsyncIO
 
@@ -91,7 +87,8 @@ def test_numpy(ureg, xdb):
 
 @requires_pint
 def test_db_contents(ureg, xdb):
-    _id, _ = xdb.put(sample_data(ureg))
+    ds = sample_data(ureg)
+    _id, _ = xdb.put(ds)
 
     assert list(xdb.meta.find()) == [
         {

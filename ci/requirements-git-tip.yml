@@ -1,8 +1,7 @@
 name: test_env
 channels:
-  # Use latest version from conda-forge. This is unlike all other environments, where
-  # older versions from anaconda are preferred when available.
   - conda-forge
+  - anaconda
 dependencies:
   - pip
   - python=3.7
@@ -17,7 +16,6 @@ dependencies:
   - pandas
   - pymongo
   - scipy
-  # needed by dask.delayed
   - toolz
   # Compile from sources using the git master tip
   - pip:
