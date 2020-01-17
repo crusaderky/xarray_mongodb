@@ -23,6 +23,8 @@ v0.2.0 (unreleased)
   pandas  0.21   0.24
   ======= ====== ====
 
+- Added support for Python 3.8
+- Added support for Motor on Windows (requires Motor >=2.1)
 - toolz is now marked as a mandatory dependency
 
 
