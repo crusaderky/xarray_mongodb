@@ -26,6 +26,7 @@ v0.2.0 (unreleased)
 - Added support for Python 3.8
 - Added support for Motor on Windows (requires Motor >=2.1)
 - toolz is now marked as a mandatory dependency
+- Fixed error when a package importing xarray_mongodb runs ``mypy --strict``
 
 
 .. _whats-new.0.1.0:

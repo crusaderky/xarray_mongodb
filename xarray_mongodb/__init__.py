@@ -1,22 +1,18 @@
-try:
-    from .version import version as __version__  # noqa: F401
-except ImportError:  # pragma: no cover
-    raise ImportError(
-        "xarray_mongodb not properly installed. If you are running from the source "
-        "directory, please instead create a new virtual environment (using conda or "
-        "virtualenv) and then install it in-place by running: pip install -e ."
-    )
-
+import pkg_resources
 
 from . import patch_pymongo
 from .errors import DocumentNotFoundError  # noqa: F401
 from .sync import XarrayMongoDB  # noqa: F401
 
+try:  # pragma: no cover
+    __version__ = pkg_resources.get_distribution("xarray_mongodb").version
+except Exception:  # pragma: no cover
+    # No installed copy
+    __version__ = "unknown"
+
 # Make PyMongo objects serialisable
 patch_pymongo.patch_pymongo()
 del patch_pymongo
-
-__all__ = ("__version__", "DocumentNotFoundError", "XarrayMongoDB")
 
 
 try:
@@ -28,7 +24,19 @@ except ImportError:
 
 if has_motor:
     from .asyncio import XarrayMongoDBAsyncIO  # noqa: F401
+else:
 
-    __all__ = __all__ + ("XarrayMongoDBAsyncIO",)  # type: ignore
+    class XarrayMongoDBAsyncIO:  # type: ignore
+        def __new__(cls, *args, **kwargs):
+            raise ImportError("XarrayMongoDBAsyncIO requires motor >=2.0")
+
 
 del has_motor
+
+
+__all__ = (
+    "__version__",
+    "DocumentNotFoundError",
+    "XarrayMongoDB",
+    "XarrayMongoDBAsyncIO",
+)

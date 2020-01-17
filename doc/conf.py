@@ -65,7 +65,7 @@ copyright = "2019-%s, Amphora, Inc." % datetime.datetime.now().year
 # built documents.
 #
 # The short X.Y version.
-version = xarray_mongodb.version.short_version
+version = xarray_mongodb.__version__
 # The full version, including alpha/beta/rc tags.
 release = xarray_mongodb.__version__
 
