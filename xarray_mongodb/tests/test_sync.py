@@ -5,37 +5,35 @@ import xarray
 from xarray_mongodb import DocumentNotFoundError
 
 from .data import ds, expect_chunks, expect_meta, parametrize_roundtrip
-from .fixtures import sync_xdb
-
-xdb = pytest.fixture(sync_xdb)
 
 
 @parametrize_roundtrip
-def test_roundtrip(xdb, compute, load, chunks):
+def test_roundtrip(sync_xdb, compute, load, chunks):
     if compute:
-        _id, future = xdb.put(ds.compute())
+        _id, future = sync_xdb.put(ds.compute())
         assert future is None
     else:
-        _id, future = xdb.put(ds)
+        _id, future = sync_xdb.put(ds)
         future.compute()
     assert isinstance(_id, bson.ObjectId)
 
-    ds2 = xdb.get(_id, load=load)
+    ds2 = sync_xdb.get(_id, load=load)
     xarray.testing.assert_identical(ds, ds2)
     assert {k: v.chunks for k, v in ds2.variables.items()} == chunks
 
 
-def test_db_contents(xdb):
-    assert xdb.meta.name.endswith(".meta")
-    assert xdb.chunks.name.endswith(".chunks")
-    assert xdb.meta.name.split(".")[:-1] == xdb.chunks.name.split(".")[:-1]
+def test_db_contents(sync_xdb):
+    assert sync_xdb.meta.name.endswith(".meta")
+    assert sync_xdb.chunks.name.endswith(".chunks")
+    assert sync_xdb.meta.name.split(".")[:-1] == sync_xdb.chunks.name.split(".")[:-1]
 
-    _id, future = xdb.put(ds)
+    _id, future = sync_xdb.put(ds)
     future.compute()
 
-    assert list(xdb.meta.find()) == expect_meta(_id)
+    assert list(sync_xdb.meta.find()) == expect_meta(_id)
     chunks = sorted(
-        xdb.chunks.find({}, {"_id": False}), key=lambda doc: (doc["name"], doc["chunk"])
+        sync_xdb.chunks.find({}, {"_id": False}),
+        key=lambda doc: (doc["name"], doc["chunk"]),
     )
     assert chunks == sorted(
         expect_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
@@ -43,30 +41,30 @@ def test_db_contents(xdb):
 
 
 @pytest.mark.parametrize("name", [None, "foo"])
-def test_dataarray(xdb, name):
+def test_dataarray(sync_xdb, name):
     a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]}, name=name)
-    _id, _ = xdb.put(a)
-    a2 = xdb.get(_id)
+    _id, _ = sync_xdb.put(a)
+    a2 = sync_xdb.get(_id)
     xarray.testing.assert_identical(a, a2)
 
 
-def test_multisegment(xdb):
-    xdb.chunk_size_bytes = 4
-    _id, future = xdb.put(ds)
+def test_multisegment(sync_xdb):
+    sync_xdb.chunk_size_bytes = 4
+    _id, future = sync_xdb.put(ds)
     future.compute()
-    assert xdb.chunks.find_one({"n": 2})
-    ds2 = xdb.get(_id)
+    assert sync_xdb.chunks.find_one({"n": 2})
+    ds2 = sync_xdb.get(_id)
     xarray.testing.assert_identical(ds, ds2)
 
 
-def test_size_zero(xdb):
+def test_size_zero(sync_xdb):
     a = xarray.DataArray([])
-    _id, _ = xdb.put(a)
-    a2 = xdb.get(_id)
+    _id, _ = sync_xdb.put(a)
+    a2 = sync_xdb.get(_id)
     xarray.testing.assert_identical(a, a2)
 
 
-def test_nan_chunks(xdb):
+def test_nan_chunks(sync_xdb):
     """Test the case where the metadata of a dask array can't know the chunk sizes, as
     they are defined at the moment of computing it.
 
@@ -82,9 +80,9 @@ def test_nan_chunks(xdb):
 
     assert str(a.shape) == "(nan,)"
     assert str(a.chunks) == "((nan, nan),)"
-    _id, future = xdb.put(a)
+    _id, future = sync_xdb.put(a)
     future.compute()
-    a2 = xdb.get(_id)
+    a2 = sync_xdb.get(_id)
     assert str(a2.shape) == "(nan,)"
     assert str(a2.chunks) == "((nan, nan),)"
 
@@ -95,17 +93,17 @@ def test_nan_chunks(xdb):
     )
 
 
-def test_meta_not_found(xdb):
+def test_meta_not_found(sync_xdb):
     with pytest.raises(DocumentNotFoundError) as ex:
-        xdb.get(bson.ObjectId("deadbeefdeadbeefdeadbeef"))
+        sync_xdb.get(bson.ObjectId("deadbeefdeadbeefdeadbeef"))
     assert str(ex.value) == "deadbeefdeadbeefdeadbeef"
 
 
-def test_no_segments_found(xdb):
-    _id, future = xdb.put(ds)
+def test_no_segments_found(sync_xdb):
+    _id, future = sync_xdb.put(ds)
     future.compute()
-    xdb.chunks.delete_many({"name": "d", "chunk": [1, 0]})
-    ds2 = xdb.get(_id)
+    sync_xdb.chunks.delete_many({"name": "d", "chunk": [1, 0]})
+    ds2 = sync_xdb.get(_id)
     with pytest.raises(DocumentNotFoundError) as ex:
         ds2.compute()
     assert str(ex.value) == (
@@ -118,12 +116,12 @@ def test_no_segments_found(xdb):
 # A missing chunk with chunk_size_bytes=8 causes ndarray.reshape to crash with
 # 'ValueError: cannot reshape array of size 1 into shape (1,2)'.
 @pytest.mark.parametrize("chunk_size_bytes", (2, 8))
-def test_some_segments_not_found(xdb, chunk_size_bytes):
-    xdb.chunk_size_bytes = chunk_size_bytes
-    _id, future = xdb.put(ds)
+def test_some_segments_not_found(sync_xdb, chunk_size_bytes):
+    sync_xdb.chunk_size_bytes = chunk_size_bytes
+    _id, future = sync_xdb.put(ds)
     future.compute()
-    xdb.chunks.delete_one({"name": "d", "chunk": [1, 0], "n": 1})
-    ds2 = xdb.get(_id)
+    sync_xdb.chunks.delete_one({"name": "d", "chunk": [1, 0], "n": 1})
+    ds2 = sync_xdb.get(_id)
     with pytest.raises(DocumentNotFoundError) as ex:
         ds2.compute()
     assert str(ex.value) == (

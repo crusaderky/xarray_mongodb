@@ -6,9 +6,6 @@ import xarray
 from xarray_mongodb import XarrayMongoDB
 
 from . import requires_motor, requires_pint
-from .fixtures import sync_xdb
-
-xdb = pytest.fixture(sync_xdb)
 
 
 @pytest.fixture
@@ -51,12 +48,12 @@ def sample_data(ureg):
 
 
 @requires_pint
-def test_ureg(ureg, ureg_custom, xdb):
+def test_ureg(ureg, ureg_custom, sync_xdb):
     from xarray_mongodb import XarrayMongoDB
 
-    assert xdb.ureg is ureg
-    xdb_custom = XarrayMongoDB(xdb.meta.database, ureg=ureg_custom)
-    assert xdb_custom.ureg is ureg_custom
+    assert sync_xdb.ureg is ureg
+    sync_xdb_custom = XarrayMongoDB(sync_xdb.meta.database, ureg=ureg_custom)
+    assert sync_xdb_custom.ureg is ureg_custom
 
 
 @requires_motor
@@ -70,27 +67,27 @@ def test_ureg_motor(ureg, ureg_custom):
 
     db = motor.motor_asyncio.AsyncIOMotorClient().test_xarray_mongodb
 
-    xdb = XarrayMongoDBAsyncIO(db)
-    assert xdb.ureg is ureg
+    sync_xdb = XarrayMongoDBAsyncIO(db)
+    assert sync_xdb.ureg is ureg
 
-    xdb = XarrayMongoDBAsyncIO(db, ureg=ureg_custom)
-    assert xdb.ureg is ureg_custom
+    sync_xdb = XarrayMongoDBAsyncIO(db, ureg=ureg_custom)
+    assert sync_xdb.ureg is ureg_custom
 
 
 @requires_pint
-def test_numpy(ureg, xdb):
+def test_numpy(ureg, sync_xdb):
     a = sample_data(ureg)
-    _id, _ = xdb.put(a)
-    b = xdb.get(_id)
+    _id, _ = sync_xdb.put(a)
+    b = sync_xdb.get(_id)
     xarray.testing.assert_identical(a, b)
 
 
 @requires_pint
-def test_db_contents(ureg, xdb):
+def test_db_contents(ureg, sync_xdb):
     ds = sample_data(ureg)
-    _id, _ = xdb.put(ds)
+    _id, _ = sync_xdb.put(ds)
 
-    assert list(xdb.meta.find()) == [
+    assert list(sync_xdb.meta.find()) == [
         {
             "_id": _id,
             "attrs": {},
@@ -126,7 +123,7 @@ def test_db_contents(ureg, xdb):
         }
     ]
 
-    chunks = list(xdb.chunks.find())
+    chunks = list(sync_xdb.chunks.find())
     for chunk in chunks:
         del chunk["_id"]
     assert chunks == [
@@ -164,7 +161,7 @@ def test_db_contents(ureg, xdb):
 
 
 @requires_pint
-def bad_meta1(ureg, xdb):
+def bad_meta1(ureg, sync_xdb):
     """dask _meta is the wrong Quantity
     """
     a = xarray.DataArray(
@@ -177,9 +174,9 @@ def bad_meta1(ureg, xdb):
     assert str(a.data.compute().units) == "kg"
     assert str(a.data._meta.units) == "g"
 
-    _id, future = xdb.put(a)
+    _id, future = sync_xdb.put(a)
     future.compute()
-    b = xdb.get(_id)
+    b = sync_xdb.get(_id)
 
     assert str(b.data.compute().units) == "kg"
     assert str(b.data._meta.units) == "g"
@@ -187,7 +184,7 @@ def bad_meta1(ureg, xdb):
 
 
 @requires_pint
-def bad_meta2(ureg, xdb):
+def bad_meta2(ureg, sync_xdb):
     """dask _meta is a Quantity, but dask payload is a np.ndarray
     """
     a = xarray.DataArray(
@@ -195,16 +192,16 @@ def bad_meta2(ureg, xdb):
     )
     assert str(a.data._meta.units) == "g"
 
-    _id, future = xdb.put(a)
+    _id, future = sync_xdb.put(a)
     future.compute()
-    b = xdb.get(_id)
+    b = sync_xdb.get(_id)
 
     assert str(b.data._meta.units) == "g"
     xarray.testing.assert_identical(a, b)
 
 
 @requires_pint
-def bad_meta3(ureg, xdb):
+def bad_meta3(ureg, sync_xdb):
     """dask _meta is a np.ndarray, but dask payload is a Quantity
     """
     a = xarray.DataArray(
@@ -214,16 +211,16 @@ def bad_meta3(ureg, xdb):
     )
     assert str(a.data.compute().units) == "kg"
 
-    _id, future = xdb.put(a)
+    _id, future = sync_xdb.put(a)
     future.compute()
-    b = xdb.get(_id)
+    b = sync_xdb.get(_id)
 
     assert str(b.data.compute().units) == "kg"
     xarray.testing.assert_identical(a, b)
 
 
 @requires_pint
-def custom_units(ureg, ureg_custom, xdb):
+def custom_units(ureg, ureg_custom, sync_xdb):
     """dask _meta is a np.ndarray, but dask payload is a Quantity
     """
     import pint
@@ -231,23 +228,25 @@ def custom_units(ureg, ureg_custom, xdb):
     a = xarray.DataArray(ureg_custom.Quantity(1, "test_unit"))
     assert str(a.data.units) == "test_unit"
 
-    xdb_custom = XarrayMongoDB(
-        xdb.meta.database, collection=xdb.meta.name.split(".")[0], ureg=ureg_custom
+    sync_xdb_custom = XarrayMongoDB(
+        sync_xdb.meta.database,
+        collection=sync_xdb.meta.name.split(".")[0],
+        ureg=ureg_custom,
     )
 
-    _id, future = xdb_custom.put(a)
+    _id, future = sync_xdb_custom.put(a)
     future.compute()
-    b = xdb_custom.get(_id)
+    b = sync_xdb_custom.get(_id)
 
     assert str(b.data.compute().units) == "test_unit"
     xarray.testing.assert_identical(a, b)
 
     with pytest.raises(pint.UndefinedUnitError):
-        xdb.get(_id)
+        sync_xdb.get(_id)
 
     pint.set_application_registry(ureg_custom)
     try:
-        c = xdb.get(_id)
+        c = sync_xdb.get(_id)
         assert str(c.data.compute().units) == "test_unit"
         xarray.testing.assert_identical(a, c)
     finally:
@@ -256,11 +255,11 @@ def custom_units(ureg, ureg_custom, xdb):
 
 @pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
 @requires_pint
-def test_dask(ureg, xdb):
+def test_dask(ureg, sync_xdb):
     a = sample_data(ureg).chunk(1)
-    _id, future = xdb.put(a)
+    _id, future = sync_xdb.put(a)
     future.compute()
-    b = xdb.get(_id)
+    b = sync_xdb.get(_id)
     xarray.testing.assert_identical(a, b)
 
     for k, v in a.variables.items():

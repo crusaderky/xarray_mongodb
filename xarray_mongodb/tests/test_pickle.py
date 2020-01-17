@@ -11,19 +11,15 @@ import pickle
 import subprocess
 import sys
 
-import pytest
 import xarray
 
-from .fixtures import sync_xdb
-
-xdb = pytest.fixture(sync_xdb)
 
 LOAD_PICKLE = os.path.join(os.path.dirname(__file__), "load_pickle.py")
 
 
-def test_pickle(xdb, tmpdir):
+def test_pickle(sync_xdb, tmpdir):
     ds = xarray.DataArray([1, 2]).chunk()
-    _, future = xdb.put(ds)
+    _, future = sync_xdb.put(ds)
     assert future is not None
 
     with open(f"{tmpdir}/p.pickle", "wb") as fh:

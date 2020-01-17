@@ -1,18 +1,12 @@
 """pytest fixtures
-
-.. note::
-   These functions can't be decorated by ``@pytest.fixture`` in this module because it
-   confuses flake8.
-
-Usage::
-
-    import pytest
-    from .fixtures import sync_xdb
-    xdb = pytest.fixture(sync_xdb)
 """
+import asyncio
 import uuid
 
+import pytest
 
+
+@pytest.fixture
 def sync_xdb():
     import pymongo
     from xarray_mongodb import XarrayMongoDB
@@ -24,7 +18,17 @@ def sync_xdb():
     client.drop_database(dbname)
 
 
-async def async_xdb():
+@pytest.fixture
+def event_loop():
+    """pytest-asyncio by default creates a new event loop or every new coroutine. This
+    happens *after* the fixtures are applied, which causes the AsyncIOMotorClient to be
+    attached to the wrong event loop
+    """
+    yield asyncio.get_event_loop()
+
+
+@pytest.fixture
+async def async_xdb(event_loop):
     import motor.motor_asyncio
     from xarray_mongodb import XarrayMongoDBAsyncIO
 
