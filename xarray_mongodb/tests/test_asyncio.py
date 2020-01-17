@@ -5,7 +5,16 @@ import xarray
 from xarray_mongodb import DocumentNotFoundError
 
 from . import requires_motor
-from .data import ds, expect_chunks, expect_meta, parametrize_roundtrip
+from .data import (
+    da,
+    ds,
+    expect_da_chunks,
+    expect_da_meta,
+    expect_ds_chunks,
+    expect_ds_meta,
+    expect_meta_minimal,
+    parametrize_roundtrip,
+)
 
 
 @requires_motor
@@ -35,24 +44,42 @@ async def test_db_contents(async_xdb):
     _id, future = await async_xdb.put(ds)
     future.compute()
 
-    assert await async_xdb.meta.find().to_list(None) == expect_meta(_id)
+    assert await async_xdb.meta.find().to_list(None) == expect_ds_meta(_id)
     chunks = sorted(
         await async_xdb.chunks.find({}, {"_id": False}).to_list(None),
         key=lambda doc: (doc["name"], doc["chunk"]),
     )
     assert chunks == sorted(
-        expect_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
+        expect_ds_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
     )
+
+
+@requires_motor
+@pytest.mark.asyncio
+async def test_minimal(async_xdb):
+    ds_min = xarray.Dataset()
+    _id, _ = await async_xdb.put(ds_min)
+    assert await async_xdb.meta.find().to_list(None) == expect_meta_minimal(_id)
+    assert await async_xdb.chunks.find({}, {"_id": False}).to_list(None) == []
+    out = await async_xdb.get(_id)
+    xarray.testing.assert_identical(ds_min, out)
 
 
 @requires_motor
 @pytest.mark.asyncio
 @pytest.mark.parametrize("name", [None, "foo"])
 async def test_dataarray(async_xdb, name):
-    a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]})
-    _id, _ = await async_xdb.put(a)
-    a2 = await async_xdb.get(_id)
-    xarray.testing.assert_identical(a, a2)
+    da2 = da.copy()
+    if name:
+        da2.name = name
+    _id, _ = await async_xdb.put(da2)
+
+    assert await async_xdb.meta.find().to_list(None) == expect_da_meta(_id, name)
+    assert await async_xdb.chunks.find({}, {"_id": False}).to_list(
+        None
+    ) == expect_da_chunks(_id)
+    out = await async_xdb.get(_id)
+    xarray.testing.assert_identical(da2, out)
 
 
 @requires_motor

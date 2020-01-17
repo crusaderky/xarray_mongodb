@@ -130,4 +130,4 @@ xarray_mongodb has to cope with a few caveats with legacy versions of its depend
 Hence, there is a set of minimum required versions when pint and sparse are not
 involved, and a different set of much more recent ones when they are.
 
-See also: :ref:`minversions`.
+See also: :ref:`mindeps_policy`.

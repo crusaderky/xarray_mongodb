@@ -38,8 +38,8 @@ extensions = [
 ]
 
 extlinks = {
-    "issue": ("https://github.com/AmphoraInc/xarray_mongodb/issues/%s", "GH"),
-    "pull": ("https://github.com/AmphoraInc/xarray_mongodb/pull/%s", "PR"),
+    "issue": ("https://github.com/AmphoraInc/xarray_mongodb/issues/%s", "#"),
+    "pull": ("https://github.com/AmphoraInc/xarray_mongodb/pull/%s", "#"),
 }
 
 autosummary_generate = True

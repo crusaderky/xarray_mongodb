@@ -1,6 +1,6 @@
 """Shared code between :class:`XarrayMongoDB` and :class:`XarrayMongoDBAsyncIO`
 """
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from functools import partial
 from itertools import groupby
 from typing import (
@@ -21,10 +21,10 @@ import dask.array
 import dask.base
 import dask.core
 import dask.highlevelgraph
-from dask.delayed import Delayed
 import numpy as np
 import pymongo
 import xarray
+from dask.delayed import Delayed
 
 from . import chunk
 from .nep18 import Quantity, UnitRegistry
@@ -105,11 +105,13 @@ class XarrayMongoDBCommon:
         collection.
         """
         meta = {
-            "attrs": bson.SON(x.attrs),
             "coords": bson.SON(),
             "data_vars": bson.SON(),
             "chunkSize": self.chunk_size_bytes,
         }
+        if x.attrs:
+            meta["attrs"] = bson.SON(x.attrs)
+
         if isinstance(x, xarray.DataArray):
             if x.name:
                 meta["name"] = x.name
@@ -124,6 +126,8 @@ class XarrayMongoDBCommon:
                 "chunks": v.chunks,
                 "type": "ndarray",
             }
+            if v.attrs and k != "__DataArray__":
+                subdoc[k]["attrs"] = v.attrs
             if isinstance(v.data, Quantity):
                 subdoc[k]["units"] = str(v.data.units)
 
@@ -312,16 +316,19 @@ class XarrayMongoDBCommon:
                     # wrap numpy/dask array with pint
                     array = self.ureg.Quantity(array, var_meta["units"])
 
-                yield var_name, xarray.Variable(var_meta["dims"], array)
+                yield var_name, xarray.Variable(
+                    var_meta["dims"], array, attrs=var_meta.get("attrs")
+                )
 
         ds = xarray.Dataset(
-            coords=OrderedDict(build_variables("coords")),
-            data_vars=OrderedDict(build_variables("data_vars")),
-            attrs=OrderedDict(meta["attrs"]),
+            coords=dict(build_variables("coords")),
+            data_vars=dict(build_variables("data_vars")),
+            attrs=meta.get("attrs", {}),
         )
 
         if meta["data_vars"].keys() == {"__DataArray__"}:
             da = cast(xarray.DataArray, ds["__DataArray__"])
+            da.attrs = ds.attrs
             da.name = meta.get("name")
             return da
         return ds

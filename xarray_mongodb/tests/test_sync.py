@@ -4,7 +4,16 @@ import xarray
 
 from xarray_mongodb import DocumentNotFoundError
 
-from .data import ds, expect_chunks, expect_meta, parametrize_roundtrip
+from .data import (
+    da,
+    ds,
+    expect_da_chunks,
+    expect_da_meta,
+    expect_ds_chunks,
+    expect_ds_meta,
+    expect_meta_minimal,
+    parametrize_roundtrip,
+)
 
 
 @parametrize_roundtrip
@@ -30,22 +39,36 @@ def test_db_contents(sync_xdb):
     _id, future = sync_xdb.put(ds)
     future.compute()
 
-    assert list(sync_xdb.meta.find()) == expect_meta(_id)
+    assert list(sync_xdb.meta.find()) == expect_ds_meta(_id)
     chunks = sorted(
         sync_xdb.chunks.find({}, {"_id": False}),
         key=lambda doc: (doc["name"], doc["chunk"]),
     )
     assert chunks == sorted(
-        expect_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
+        expect_ds_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
     )
+
+
+def test_minimal(sync_xdb):
+    ds_min = xarray.Dataset()
+    _id, _ = sync_xdb.put(ds_min)
+    assert list(sync_xdb.meta.find()) == expect_meta_minimal(_id)
+    assert list(sync_xdb.chunks.find({}, {"_id": False})) == []
+    out = sync_xdb.get(_id)
+    xarray.testing.assert_identical(ds_min, out)
 
 
 @pytest.mark.parametrize("name", [None, "foo"])
 def test_dataarray(sync_xdb, name):
-    a = xarray.DataArray([1, 2], dims=["x"], coords={"x": ["x1", "x2"]}, name=name)
-    _id, _ = sync_xdb.put(a)
-    a2 = sync_xdb.get(_id)
-    xarray.testing.assert_identical(a, a2)
+    da2 = da.copy()
+    if name:
+        da2.name = name
+    _id, _ = sync_xdb.put(da2)
+
+    assert list(sync_xdb.meta.find()) == expect_da_meta(_id, name)
+    assert list(sync_xdb.chunks.find({}, {"_id": False})) == expect_da_chunks(_id)
+    out = sync_xdb.get(_id)
+    xarray.testing.assert_identical(da2, out)
 
 
 def test_multisegment(sync_xdb):

@@ -90,7 +90,6 @@ def test_db_contents(ureg, sync_xdb):
     assert list(sync_xdb.meta.find()) == [
         {
             "_id": _id,
-            "attrs": {},
             "chunkSize": 261120,
             "coords": {
                 "x": {

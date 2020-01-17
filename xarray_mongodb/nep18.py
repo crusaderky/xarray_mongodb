@@ -4,7 +4,6 @@ Please read :doc:`nep18`.
 """
 from typing import Any, Callable
 
-
 __all__ = ("COO", "Quantity", "Unit", "UnitRegistry")
 
 

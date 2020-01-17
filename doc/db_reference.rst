@@ -19,7 +19,7 @@ follows::
 
     {
         '_id': bson.ObjectId(...),
-        'attrs': bson.SON(...),
+        'attrs': bson.SON(...)  (optional),
         'chunkSize': 261120,
         'coords': bson.SON(...),
         'data_vars': bson.SON(...),
@@ -30,10 +30,11 @@ Where:
 
 - ``_id`` is the unique ID of the xarray object
 - ``attrs``, ``coords``, and ``data_vars`` are ``bson.SON`` objects with
-  the same order as the :class:`collections.OrderedDict` objects in the
-  xarray object.
-- ``attrs`` are the ``Dataset.attrs``, in native MongoDB format. Python object
-  types that are not recognized by PyMongo are not supported.
+  the same order as the dictionaries in the xarray object (note how dicts
+  preserve insertion order starting from Python 3.6).
+- ``attrs`` are the ``Dataset.attrs`` or ``DataArray.attrs``, in native MongoDB format.
+  Python object types that are not recognized by PyMongo are not supported. Omit when no
+  attrs are available.
 - chunkSize is the number of bytes stored at most in each document in the
   ``<prefix>.chunks`` collection. This is not to be confused with dask chunk
   size; for each dask chunk there are one or more MongoDB documents in the
@@ -49,6 +50,7 @@ Where:
         'dtype': '<i8',
         'shape': [4, 4],
         'type': <'ndarray'|'COO'>,
+        'attrs': bson.SON(...) (optional),
         'fill_value': <bytes> (optional),
         'units': '<str>' (optional),
      }
@@ -60,6 +62,7 @@ Where:
   - ``shape`` is the overall shape of the numpy/dask array
   - ``type`` is the backend array type; ``ndarray`` for dense objects and ``COO``
     for :class:`sparse.COO` objects.
+  - ``attrs`` are the variable attributes, if any
   - ``fill_value`` is the default value of the sparse array.
     It is a bytes buffer in little endian encoding of as many bytes as implied by dtype.
     This format allows encoding dtypes that are not native to MongoDB, e.g. complex
@@ -69,8 +72,10 @@ Where:
     and remitted to pint (or whatever other engine is used to handle units of measures).
     Omit for unit-less objects.
 
-:class:`xarray.DataArray` objects are identifiable by having exactly one
-variable in ``data_vars``, conventionally named ``__DataArray__``.
+:class:`xarray.DataArray` objects are identifiable by having exactly one variable in
+``data_vars``, conventionally named ``__DataArray__``. Note how ``DataArray.attrs`` are
+the same as the attributes of its data variable; in xarray_mongodb they are only stored
+in the top-level ``attrs`` key (there is never a ``data_vars.__DataArray__.attrs`` key).
 
 .. note::
    When dealing with dask variables, ``shape`` and/or ``chunks`` may contain NaN instead

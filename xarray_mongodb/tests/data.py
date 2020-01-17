@@ -1,6 +1,7 @@
 """Shared test data between test_sync and test_async
 """
 import dask.array as da
+import numpy
 import pytest
 import xarray
 
@@ -17,6 +18,8 @@ ds["d"] = ds["d"].astype("i8").chunk({"x": 1, "y": 2})
 ds["x"] = ds["x"].astype("i8")
 ds["x2"] = ds["x2"].astype("i8")
 ds["x3"] = ds["x3"].astype("i8").chunk(1)
+ds["d"].attrs["d_attr"] = 1
+ds["x"].attrs["x_attr"] = 2
 
 
 parametrize_roundtrip = pytest.mark.parametrize(
@@ -46,7 +49,7 @@ parametrize_roundtrip = pytest.mark.parametrize(
 )
 
 
-def expect_meta(_id):
+def expect_ds_meta(_id):
     return [
         {
             "_id": _id,
@@ -59,6 +62,7 @@ def expect_meta(_id):
                     "dtype": "<i8",
                     "shape": [2],
                     "type": "ndarray",
+                    "attrs": {"x_attr": 2},
                 },
                 "x2": {
                     "chunks": None,
@@ -82,6 +86,7 @@ def expect_meta(_id):
                     "dtype": "<i8",
                     "shape": [2, 2],
                     "type": "ndarray",
+                    "attrs": {"d_attr": 1},
                 },
                 "s": {
                     "chunks": [],
@@ -91,11 +96,11 @@ def expect_meta(_id):
                     "type": "ndarray",
                 },
             },
-        }
+        },
     ]
 
 
-def expect_chunks(_id):
+def expect_ds_chunks(_id):
     return [
         {
             "chunk": [0, 0],
@@ -167,4 +172,73 @@ def expect_chunks(_id):
             "shape": [1],
             "type": "ndarray",
         },
+    ]
+
+
+da = xarray.DataArray(
+    numpy.array([1], dtype="i1"), dims=["x"], coords={"x": ["x1"]}, attrs={"foo": 1}
+)
+
+
+def expect_da_meta(_id, name):
+    out = [
+        {
+            "_id": _id,
+            "attrs": {"foo": 1},
+            "chunkSize": 261120,
+            "coords": {
+                "x": {
+                    "chunks": None,
+                    "dims": ["x"],
+                    "dtype": "<U2",
+                    "shape": [1],
+                    "type": "ndarray",
+                }
+            },
+            "data_vars": {
+                "__DataArray__": {
+                    "chunks": None,
+                    "dims": ["x"],
+                    "dtype": "|i1",
+                    "shape": [1],
+                    "type": "ndarray",
+                }
+            },
+        }
+    ]
+    if name:
+        out[0]["name"] = name
+    return out
+
+
+def expect_da_chunks(_id):
+    return [
+        {
+            "chunk": None,
+            "data": b"x\x00\x00\x001\x00\x00\x00",
+            "dtype": "<U2",
+            "meta_id": _id,
+            "n": 0,
+            "name": "x",
+            "shape": [1],
+            "type": "ndarray",
+        },
+        {
+            "chunk": None,
+            "data": b"\x01",
+            "dtype": "|i1",
+            "meta_id": _id,
+            "n": 0,
+            "name": "__DataArray__",
+            "shape": [1],
+            "type": "ndarray",
+        },
+    ]
+
+
+def expect_meta_minimal(_id):
+    """Metadata of an empty dataset
+    """
+    return [
+        {"_id": _id, "chunkSize": 261120, "coords": {}, "data_vars": {}},
     ]
