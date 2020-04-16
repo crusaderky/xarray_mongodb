@@ -30,7 +30,7 @@ def ureg_custom_global():
 
     ureg = pint.UnitRegistry()
     ureg.define("test_unit = 123 kg")
-    prev = pint._APP_REGISTRY
+    prev = pint.get_application_registry()
     pint.set_application_registry(ureg)
     yield ureg
     pint.set_application_registry(prev)
@@ -54,6 +54,11 @@ def test_ureg(ureg, ureg_custom, sync_xdb):
     assert sync_xdb.ureg is ureg
     sync_xdb_custom = XarrayMongoDB(sync_xdb.meta.database, ureg=ureg_custom)
     assert sync_xdb_custom.ureg is ureg_custom
+
+
+@requires_pint
+def test_ureg_global(ureg, ureg_custom_global, sync_xdb):
+    assert sync_xdb.ureg is ureg_custom_global
 
 
 @requires_motor
@@ -160,71 +165,12 @@ def test_db_contents(ureg, sync_xdb):
 
 
 @requires_pint
-def bad_meta1(ureg, sync_xdb):
-    """dask _meta is the wrong Quantity
-    """
-    a = xarray.DataArray(
-        da.from_array(
-            ureg.Quantity(123, "kg"),
-            asarray=False,
-            meta=ureg.Quantity(np.array([], dtype=int), "g"),
-        )
-    )
-    assert str(a.data.compute().units) == "kg"
-    assert str(a.data._meta.units) == "g"
-
-    _id, future = sync_xdb.put(a)
-    future.compute()
-    b = sync_xdb.get(_id)
-
-    assert str(b.data.compute().units) == "kg"
-    assert str(b.data._meta.units) == "g"
-    xarray.testing.assert_identical(a, b)
-
-
-@requires_pint
-def bad_meta2(ureg, sync_xdb):
-    """dask _meta is a Quantity, but dask payload is a np.ndarray
-    """
-    a = xarray.DataArray(
-        da.from_array(np.array(123), meta=ureg.Quantity(np.array([], dtype=int), "g"))
-    )
-    assert str(a.data._meta.units) == "g"
-
-    _id, future = sync_xdb.put(a)
-    future.compute()
-    b = sync_xdb.get(_id)
-
-    assert str(b.data._meta.units) == "g"
-    xarray.testing.assert_identical(a, b)
-
-
-@requires_pint
-def bad_meta3(ureg, sync_xdb):
-    """dask _meta is a np.ndarray, but dask payload is a Quantity
-    """
-    a = xarray.DataArray(
-        da.from_array(
-            ureg.Quantity(123, "kg"), asarray=False, meta=np.array([], dtype=int)
-        )
-    )
-    assert str(a.data.compute().units) == "kg"
-
-    _id, future = sync_xdb.put(a)
-    future.compute()
-    b = sync_xdb.get(_id)
-
-    assert str(b.data.compute().units) == "kg"
-    xarray.testing.assert_identical(a, b)
-
-
-@requires_pint
-def custom_units(ureg, ureg_custom, sync_xdb):
+def test_custom_units(ureg, ureg_custom, sync_xdb):
     """dask _meta is a np.ndarray, but dask payload is a Quantity
     """
     import pint
 
-    a = xarray.DataArray(ureg_custom.Quantity(1, "test_unit"))
+    a = xarray.DataArray(ureg_custom.Quantity([1], "test_unit"))
     assert str(a.data.units) == "test_unit"
 
     sync_xdb_custom = XarrayMongoDB(
@@ -233,11 +179,10 @@ def custom_units(ureg, ureg_custom, sync_xdb):
         ureg=ureg_custom,
     )
 
-    _id, future = sync_xdb_custom.put(a)
-    future.compute()
+    _id, _ = sync_xdb_custom.put(a)
     b = sync_xdb_custom.get(_id)
 
-    assert str(b.data.compute().units) == "test_unit"
+    assert str(b.data.units) == "test_unit"
     xarray.testing.assert_identical(a, b)
 
     with pytest.raises(pint.UndefinedUnitError):
@@ -246,22 +191,119 @@ def custom_units(ureg, ureg_custom, sync_xdb):
     pint.set_application_registry(ureg_custom)
     try:
         c = sync_xdb.get(_id)
-        assert str(c.data.compute().units) == "test_unit"
+        assert str(c.data.units) == "test_unit"
         xarray.testing.assert_identical(a, c)
     finally:
         pint.set_application_registry(ureg)
 
 
-@pytest.mark.xfail(reason="xarray->pint->dask broken upstream: pint#878")
+@requires_pint
+def test_scalar_dtypes(ureg, sync_xdb):
+    """DataArray(numpy.float64(1.2)) automatically converts the data to a scalar
+    numpy.ndarray. DataArray(Quantity(numpy.float64(1.2))) doesn't, but it's ok because
+    numpy dtypes are array-likes.
+    """
+    a = xarray.DataArray(ureg.Quantity(np.float32(1.2), "s"))
+    _id, _ = sync_xdb.put(a)
+    b = sync_xdb.get(_id)
+    np.testing.assert_array_equal(b.data.magnitude, np.array(1.2, dtype="f4"))
+
+    assert list(sync_xdb.meta.find()) == [
+        {
+            "_id": _id,
+            "chunkSize": 261120,
+            "coords": {},
+            "data_vars": {
+                "__DataArray__": {
+                    "chunks": None,
+                    "dims": [],
+                    "dtype": "<f4",
+                    "shape": [],
+                    "type": "ndarray",
+                    "units": "second",
+                }
+            },
+        }
+    ]
+
+    chunks = list(sync_xdb.chunks.find())
+    for chunk in chunks:
+        del chunk["_id"]
+    assert chunks == [
+        {
+            "chunk": None,
+            "data": b"\x9a\x99\x99?",
+            "dtype": "<f4",
+            "meta_id": _id,
+            "n": 0,
+            "name": "__DataArray__",
+            "shape": [],
+            "type": "ndarray",
+        }
+    ]
+
+
 @requires_pint
 def test_dask(ureg, sync_xdb):
-    a = sample_data(ureg).chunk(1)
+    a = xarray.DataArray(ureg.Quantity(da.arange(4, dtype="i1", chunks=2), "kg"))
+
     _id, future = sync_xdb.put(a)
     future.compute()
     b = sync_xdb.get(_id)
-    xarray.testing.assert_identical(a, b)
 
-    for k, v in a.variables.items():
-        assert b[k].chunks == v.chunks
-        assert b[k].data._meta.units == v.data._meta.units
-        assert b[k].compute().data.units == v.compute().data.units
+    assert str(b.data.units) == "kilogram"
+    np.testing.assert_array_equal(b.data.magnitude._meta, a.data.magnitude._meta)
+    assert b.data.magnitude.chunks == a.data.magnitude.chunks
+    np.testing.assert_array_equal(
+        b.data.magnitude.compute(), a.data.magnitude.compute()
+    )
+
+    c = sync_xdb.get(_id, load=True)
+    assert str(c.data.units) == "kilogram"
+    assert isinstance(c.data.magnitude, np.ndarray)
+    np.testing.assert_array_equal(c.data.magnitude, a.data.magnitude.compute())
+
+    assert list(sync_xdb.meta.find()) == [
+        {
+            "_id": _id,
+            "chunkSize": 261120,
+            "coords": {},
+            "data_vars": {
+                "__DataArray__": {
+                    "chunks": [[2, 2]],
+                    "dims": ["dim_0"],
+                    "dtype": "|i1",
+                    "shape": [4],
+                    "type": "ndarray",
+                    "units": "kilogram",
+                }
+            },
+            "name": a.name,
+        }
+    ]
+
+    chunks = list(sync_xdb.chunks.find())
+    for chunk in chunks:
+        del chunk["_id"]
+    assert chunks == [
+        {
+            "chunk": [0],
+            "data": b"\x00\x01",
+            "dtype": "|i1",
+            "meta_id": _id,
+            "n": 0,
+            "name": "__DataArray__",
+            "shape": [2],
+            "type": "ndarray",
+        },
+        {
+            "chunk": [1],
+            "data": b"\x02\x03",
+            "dtype": "|i1",
+            "meta_id": _id,
+            "n": 0,
+            "name": "__DataArray__",
+            "shape": [2],
+            "type": "ndarray",
+        },
+    ]

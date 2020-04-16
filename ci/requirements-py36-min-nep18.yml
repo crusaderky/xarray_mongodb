@@ -10,7 +10,7 @@ dependencies:
   - mypy
   - numpy=1.17
   - pandas=0.24
-  - pint=0.9
+  - pint=0.10
   - pymongo=3.7
   - pytest
   - pytest-asyncio

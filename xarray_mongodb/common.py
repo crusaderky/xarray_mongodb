@@ -170,6 +170,8 @@ class XarrayMongoDBCommon:
             if isinstance(data, Quantity):
                 # units have already been recorded in the metadata
                 data = data.magnitude
+            if isinstance(data, np.number):
+                data = np.asarray(data)
             if isinstance(data, dask.array.Array):
                 put_keys, put_graph = self._delayed_put(meta_id, str(var_name), data)
                 keys += put_keys

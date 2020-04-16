@@ -11,8 +11,7 @@ v0.2.0 (unreleased)
 Database structure changes
 --------------------------
 - Removed ``units`` field from the ``xarray.chunks`` collection. Pint must always wrap
-  around dask, and not the other way around. Note that, at the moment of writing,
-  xarray->pint->dask is broken upstream.
+  around dask, and not the other way around.
 - ``DataArray.attrs`` was previously lost upon storage; it is now saved in the top-level
   ``attrs` dict. (:issue:`10`).
 - The ``attrs`` dict is now omitted if empty.
@@ -29,8 +28,9 @@ Packaging changes
   ======= ====== ====
   Package old    new
   ======= ====== ====
-  xarray  0.10.4 0.11
-  numpy   1.13   1.14
+  xarray  0.10.4 0.13
+  numpy   1.13   1.15
+  dask    1.1    1.2
   pandas  0.21   0.24
   ======= ====== ====
 
@@ -43,6 +43,8 @@ Packaging changes
 Other changes
 -------------
 - Fixed error when a package importing xarray_mongodb runs ``mypy --strict``
+- Automatically cast scalar numpy objects (e.g. float64) wrapped by pint.Quantity to
+  scalar ndarrays upon insertion
 
 
 .. _whats-new.0.1.0:
