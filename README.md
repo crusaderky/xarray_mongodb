@@ -2,6 +2,10 @@
 
 xarray_mongodb
 ==============
+[![doc-badge](https://github.com/AmphoraInc/xarray_mongodb/workflows/Documentation/badge.svg)](https://github.com/AmphoraInc/xarray_mongodb/actions)
+[![lint-badge](https://github.com/AmphoraInc/xarray_mongodb/workflows/Lint/badge.svg)](https://github.com/AmphoraInc/xarray_mongodb/actions)
+[![pytest-badge](https://github.com/AmphoraInc/xarray_mongodb/workflows/Test%20latest/badge.svg)](https://github.com/AmphoraInc/xarray_mongodb/actions)
+
 Read the full documentation at https://xarray-mongodb.readthedocs.io/en/latest/
 
 

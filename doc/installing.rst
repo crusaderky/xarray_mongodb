@@ -6,6 +6,7 @@ Installation
 Required dependencies
 ---------------------
 - Python 3.6 or later
+- MongoDB 3.6 or later
 - `xarray <http://xarray.pydata.org>`_
 - `dask <https://dask.org/>`_
 - `toolz <https://toolz.readthedocs.io/>`_

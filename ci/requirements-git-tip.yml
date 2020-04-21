@@ -1,24 +1,25 @@
-name: test_env
+name: xarray_mongodb
 channels:
   - conda-forge
 dependencies:
   - pip
-  - python=3.7
+  - python=3.8
   - pytest
   - pytest-asyncio
   - pytest-cov
   # While it could make sense to compile these from sources, it would take just too
   # long. So we'll be content with the latest versions from conda-forge.
-  - motor
-  - numba
+  - cloudpickle  # Dependency of dask[array]
+  - numba  # Dependency of sparse
   - numpy
   - pandas
   - pymongo
   - scipy
-  - toolz
+  - toolz  # Dependency of dask[delayed]
   # Compile from sources using the git master tip
   - pip:
     - git+https://github.com/dask/dask.git
+    - git+https://github.com/mongodb/motor.git
     - git+https://github.com/hgrecco/pint.git
     - git+https://github.com/pydata/sparse.git
     - git+https://github.com/pydata/xarray.git

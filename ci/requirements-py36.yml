@@ -1,13 +1,10 @@
-name: test_env
+name: xarray_mongodb
 channels:
   - conda-forge
 dependencies:
   - python=3.6
-  - black
   - dask
-  - flake8
   - motor
-  - mypy
   - numpy
   - pandas
   - pint

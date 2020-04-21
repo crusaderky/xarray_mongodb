@@ -13,7 +13,7 @@ Database structure changes
 - Removed ``units`` field from the ``xarray.chunks`` collection. Pint must always wrap
   around dask, and not the other way around.
 - ``DataArray.attrs`` was previously lost upon storage; it is now saved in the top-level
-  ``attrs` dict. (:issue:`10`).
+  ``attrs`` dict. (:issue:`10`).
 - The ``attrs`` dict is now omitted if empty.
 - Added ``attrs`` dict under every element of coords and data_vars (omitted if empty).
 
@@ -38,6 +38,8 @@ Packaging changes
 - Added support for Motor on Windows (requires Motor >=2.1)
 - toolz is now automatically installed by ``pip install xarray_mongodb``
 - Now using setuptools-scm for versioning
+- Now using GitHub actions for CI
+- Run all CI tests on MongoDB 3.6 and 4.2
 
 
 Other changes

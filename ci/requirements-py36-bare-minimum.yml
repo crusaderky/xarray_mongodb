@@ -1,4 +1,4 @@
-name: test_env
+name: xarray_mongodb
 channels:
   - conda-forge
 dependencies:

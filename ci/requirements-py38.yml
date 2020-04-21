@@ -1,13 +1,10 @@
-name: test_env
+name: xarray_mongodb
 channels:
   - conda-forge
 dependencies:
   - python=3.8
-  - black
   - dask
-  - flake8
-  # - motor  # motor 2.1 not yet available in conda-forge
-  - mypy
+  # - motor >=2.1  # Not yet available in conda-forge
   - numpy
   - pandas
   - pint
@@ -20,4 +17,4 @@ dependencies:
   - xarray
   - pip
   - pip:
-    - motor
+    - motor >= 2.1
