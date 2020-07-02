@@ -1,6 +1,7 @@
 name: xarray_mongodb
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - python=3.6
   - dask=1.2

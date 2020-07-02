@@ -282,9 +282,10 @@ def test_dask(ureg, sync_xdb):
         }
     ]
 
-    chunks = list(sync_xdb.chunks.find())
+    chunks = sorted(sync_xdb.chunks.find(), key=lambda doc: doc["chunk"])
     for chunk in chunks:
         del chunk["_id"]
+
     assert chunks == [
         {
             "chunk": [0],

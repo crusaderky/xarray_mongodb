@@ -1,6 +1,7 @@
 name: xarray_mongodb
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - pip
   - python=3.8
@@ -10,12 +11,13 @@ dependencies:
   # While it could make sense to compile these from sources, it would take just too
   # long. So we'll be content with the latest versions from conda-forge.
   - cloudpickle  # Dependency of dask[array]
-  - numba  # Dependency of sparse
+  - numba >=0.50  # Dependency of sparse
   - numpy
   - pandas
   - pymongo
   - scipy
   - toolz  # Dependency of dask[delayed]
+  - yaml  # Dependency of dask
   # Compile from sources using the git master tip
   - pip:
     - git+https://github.com/dask/dask.git

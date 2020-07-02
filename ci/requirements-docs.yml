@@ -1,6 +1,7 @@
 name: xarray_mongodb-docs
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - python=3.7
   - sphinx<3
