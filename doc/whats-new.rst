@@ -5,7 +5,7 @@ What's New
 
 .. _whats-new.0.2.0:
 
-v0.2.0 (unreleased)
+v0.2.0 (2020-07-03)
 ===================
 
 Database structure changes
@@ -18,7 +18,7 @@ Database structure changes
 - Added ``attrs`` dict under every element of coords and data_vars (omitted if empty).
 - Embed small variables into the metadata document. Added optional ``data`` key
   to each variable on the database. Added new parameter ``embed_threshold_bytes`` to
-  control how aggressive embedding should be (see :doc:`api`).
+  control how aggressive embedding should be (see :doc:`api_reference`).
 
 
 Packaging changes
