@@ -18,7 +18,7 @@ def sync_db():
 
 @pytest.fixture(scope="function")
 def sync_xdb(sync_db):
-    return XarrayMongoDB(sync_db)
+    return XarrayMongoDB(sync_db, embed_threshold_bytes=0)
 
 
 @pytest.fixture(scope="function")
@@ -42,4 +42,4 @@ async def async_db(event_loop):
 
 @pytest.fixture(scope="function")
 async def async_xdb(async_db):
-    return XarrayMongoDBAsyncIO(async_db)
+    return XarrayMongoDBAsyncIO(async_db, embed_threshold_bytes=0)

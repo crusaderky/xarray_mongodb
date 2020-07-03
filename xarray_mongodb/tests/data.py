@@ -23,28 +23,47 @@ ds["x"].attrs["x_attr"] = 2
 
 
 parametrize_roundtrip = pytest.mark.parametrize(
-    "compute,load,chunks",
+    "compute,load,embed_threshold_bytes,chunks,",
     [
         (
             False,
             None,
+            0,
+            {"x": None, "x2": None, "x3": ((1, 1),), "d": ((1, 1), (2,)), "s": ()},
+        ),
+        (
+            False,
+            None,
+            2 ** 20,
             {"x": None, "x2": None, "x3": ((1, 1),), "d": ((1, 1), (2,)), "s": ()},
         ),
         (
             False,
             False,
+            0,
             {"x": None, "x2": ((2,),), "x3": ((1, 1),), "d": ((1, 1), (2,)), "s": ()},
         ),
-        (False, True, {"x": None, "x2": None, "x3": None, "d": None, "s": None}),
-        (False, ["d"], {"x": None, "x2": ((2,),), "x3": ((1, 1),), "d": None, "s": ()}),
-        (True, None, {"x": None, "x2": None, "x3": None, "d": None, "s": None}),
         (
             True,
             False,
+            2 ** 20,
+            {"x": None, "x2": None, "x3": None, "d": None, "s": None},
+        ),
+        (
+            False,
+            ["d"],
+            0,
+            {"x": None, "x2": ((2,),), "x3": ((1, 1),), "d": None, "s": ()},
+        ),
+        (True, None, 0, {"x": None, "x2": None, "x3": None, "d": None, "s": None}),
+        (
+            True,
+            False,
+            0,
             {"x": None, "x2": ((2,),), "x3": ((2,),), "d": ((2,), (2,)), "s": ()},
         ),
-        (True, True, {"x": None, "x2": None, "x3": None, "d": None, "s": None}),
-        (True, ["d"], {"x": None, "x2": ((2,),), "x3": ((2,),), "d": None, "s": ()}),
+        (True, True, 0, {"x": None, "x2": None, "x3": None, "d": None, "s": None}),
+        (True, ["d"], 0, {"x": None, "x2": ((2,),), "x3": ((2,),), "d": None, "s": ()}),
     ],
 )
 

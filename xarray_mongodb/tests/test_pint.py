@@ -178,6 +178,7 @@ def test_custom_units(ureg, ureg_custom, sync_xdb):
         sync_xdb.meta.database,
         collection=sync_xdb.meta.name.split(".")[0],
         ureg=ureg_custom,
+        embed_threshold_bytes=0,
     )
 
     _id, _ = sync_xdb_custom.put(a)

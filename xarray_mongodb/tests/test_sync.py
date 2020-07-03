@@ -18,12 +18,13 @@ from .data import (
 
 
 def test_init(sync_db):
-    xdb = XarrayMongoDB(sync_db, "foo", chunk_size_bytes=123)
+    xdb = XarrayMongoDB(sync_db, "foo", chunk_size_bytes=123, embed_threshold_bytes=456)
     assert xdb.meta.database is sync_db
     assert xdb.meta.name == "foo.meta"
     assert xdb.chunks.database is sync_db
     assert xdb.chunks.name == "foo.chunks"
     assert xdb.chunk_size_bytes == 123
+    assert xdb.embed_threshold_bytes == 456
 
 
 def test_index_on_put(sync_xdb):
@@ -46,7 +47,13 @@ def test_index_on_get(sync_xdb):
 
 
 @parametrize_roundtrip
-def test_roundtrip(sync_xdb, compute, load, chunks):
+@pytest.mark.parametrize("chunk_size_bytes", [16, 2 ** 20])
+def test_roundtrip(
+    sync_xdb, compute, load, chunks, embed_threshold_bytes, chunk_size_bytes
+):
+    sync_xdb.chunk_size_bytes = chunk_size_bytes
+    sync_xdb.embed_threshold_bytes = embed_threshold_bytes
+
     if compute:
         _id, future = sync_xdb.put(ds.compute())
         assert future is None
@@ -179,3 +186,48 @@ def test_some_segments_not_found(sync_xdb, chunk_size_bytes):
     assert str(ex.value) == (
         f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}"
     )
+
+
+@pytest.mark.parametrize(
+    "embed_threshold_bytes,expect_chunks",
+    [
+        (0, {"b", "c", "d", "e", "f"}),
+        (8, {"b", "c", "d", "e"}),
+        (24, {"b", "d", "e"}),
+        (48, {"d", "e"}),
+    ],
+)
+def test_embed_threshold(sync_xdb, embed_threshold_bytes, expect_chunks):
+    ds = xarray.Dataset(
+        data_vars={
+            "a": ("x", []),
+            "b": ("y", [1.1, 2.2, 3.3]),
+            "c": ("z", [4.4, 5.5]),
+            "d": ("x", []),  # dask variable
+            "e": ("z", [1, 2]),  # dask variable
+            "f": 1.23,
+        }
+    )
+    ds["d"] = ds["d"].chunk()
+    ds["e"] = ds["e"].chunk()
+
+    assert sync_xdb.embed_threshold_bytes == 0
+    sync_xdb.embed_threshold_bytes = embed_threshold_bytes
+    _id, future = sync_xdb.put(ds)
+    future.compute()
+
+    ds2 = sync_xdb.get(_id)
+    xarray.testing.assert_identical(ds, ds2)
+    got_chunks = {chunk["name"] for chunk in sync_xdb.chunks.find({})}
+    assert got_chunks == expect_chunks
+
+
+def test_embed_everything(sync_xdb):
+    a = xarray.DataArray([1, 2])
+    assert sync_xdb.embed_threshold_bytes == 0
+    sync_xdb.embed_threshold_bytes = 16
+
+    _id, _ = sync_xdb.put(a)
+    a2 = sync_xdb.get(_id)
+    xarray.testing.assert_identical(a, a2)
+    assert not list(sync_xdb.chunks.find({}))

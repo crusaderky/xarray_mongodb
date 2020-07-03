@@ -10,12 +10,15 @@ from .data import ds, expect_meta_minimal, parametrize_roundtrip
 
 @requires_motor
 def test_init(async_db):
-    xdb = XarrayMongoDBAsyncIO(async_db, "foo", chunk_size_bytes=123)
+    xdb = XarrayMongoDBAsyncIO(
+        async_db, "foo", chunk_size_bytes=123, embed_threshold_bytes=456
+    )
     assert xdb.meta.database is async_db
     assert xdb.meta.name == "foo.meta"
     assert xdb.chunks.database is async_db
     assert xdb.chunks.name == "foo.chunks"
     assert xdb.chunk_size_bytes == 123
+    assert xdb.embed_threshold_bytes == 456
 
 
 @requires_motor
@@ -46,7 +49,13 @@ async def test_index_on_get(async_xdb):
 @requires_motor
 @pytest.mark.asyncio
 @parametrize_roundtrip
-async def test_roundtrip(async_xdb, compute, load, chunks):
+@pytest.mark.parametrize("chunk_size_bytes", [16, 2 ** 20])
+async def test_roundtrip(
+    async_xdb, compute, load, chunks, embed_threshold_bytes, chunk_size_bytes,
+):
+    async_xdb.chunk_size_bytes = chunk_size_bytes
+    async_xdb.embed_threshold_bytes = embed_threshold_bytes
+
     if compute:
         _id, future = await async_xdb.put(ds.compute())
         assert future is None

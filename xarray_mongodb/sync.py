@@ -7,7 +7,12 @@ import pymongo.database
 import xarray
 from dask.delayed import Delayed
 
-from .common import CHUNK_SIZE_BYTES_DEFAULT, CHUNKS_INDEX, XarrayMongoDBCommon
+from .common import (
+    CHUNK_SIZE_BYTES_DEFAULT,
+    CHUNKS_INDEX,
+    EMBED_THRESHOLD_BYTES_DEFAULT,
+    XarrayMongoDBCommon,
+)
 from .errors import DocumentNotFoundError
 from .nep18 import UnitRegistry
 
@@ -25,6 +30,19 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         Size of the payload in a document in the chunks collection. Not to be confused
         with dask chunks. dask chunks that are larger than chunk_size_bytes will be
         transparently split across multiple MongoDB documents.
+    :param int embed_threshold_bytes:
+        Cumulative size of variable buffers that will be embedded into the metadata
+        documents in <collection>.meta. Buffers that exceed the threshold (starting from
+        the largest) will be stored into the chunks documents in <collection>.chunks.
+
+        .. note::
+           - Embedded variables ignore the ``load`` parameter of :meth:`get`
+           - dask variables are never embedded, regardless of size
+           - set ``embed_threshold_bytes=0`` to force all buffers to be saved to
+             <collection>.chunks, witht he only exception of size zero non-dask
+             variables
+           - size zero non-dask variables are always embedded
+
     :param pint.registry.UnitRegistry ureg:
         pint registry to allow putting and getting arrays with units.
         If omitted, it defaults to the global registry defined with
@@ -38,6 +56,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         collection: str = "xarray",
         *,
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
+        embed_threshold_bytes: int = EMBED_THRESHOLD_BYTES_DEFAULT,
         ureg: UnitRegistry = None,
     ):
         XarrayMongoDBCommon.__init__(**locals())
@@ -110,6 +129,10 @@ class XarrayMongoDB(XarrayMongoDBCommon):
                 When retrieving a DataArray, you can target the data with the special
                 hardcoded variable name ``__DataArray__``.
 
+            .. note::
+               Embedded variables (see ``embed_threshold_bytes``) are always loaded
+               regardless of this flag.
+
         :returns:
             :class:`xarray.DataArray` or :class:`xarray.Dataset`, depending on what was
             stored with :meth:`put`
@@ -145,5 +168,8 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         if not meta:
             raise DocumentNotFoundError(_id)
         load_norm, chunks_query = self._prepare_get(meta, load)
-        chunks = list(self.chunks.find(chunks_query))
+        if chunks_query:
+            chunks = list(self.chunks.find(chunks_query))
+        else:
+            chunks = []
         return self._docs_to_dataset(meta, chunks, load_norm)

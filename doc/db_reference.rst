@@ -53,8 +53,14 @@ Where:
         'attrs': bson.SON(...) (optional),
         'units': <str> (optional),
 
+        # For ndarray only; omit in case of sparse.COO
+        'data': <bytes> (optional),
+
         # For sparse.COO only; omit in case of ndarray
         'fill_value': <bytes> (optional),
+        'sparse_data': <bytes> (optional),
+        'sparse_coords': <bytes> (optional),
+        'nnz': <int> (optional),
      }
 
   - ``chunks`` are the dask chunk sizes at the moment of storing the array, or None if
@@ -69,10 +75,17 @@ Where:
     ``kg * m /s ** 2``. The exact meaning of each symbol is deliberately omitted here
     and remitted to pint (or whatever other engine is used to handle units of measures).
     Omit for unit-less objects.
+  - ``data`` contains the raw numpy buffer of the variable in the metadata document. It
+    is meant to be used for small variables only. The buffer is in row-major (C) order
+    and little endian encoding. If ``data`` is defined, ``type`` must be set to
+    ndarray, ``chunks`` must always be None, and there must not be any documents for
+    the variable in the ``<prefix>.chunks`` collection.
   - ``fill_value`` is the default value of a sparse array.
     It is a bytes buffer in little endian encoding of as many bytes as implied by dtype.
     This format allows encoding dtypes that are not native to MongoDB, e.g. complex
     numbers. Never present when type=ndarray.
+  - ``sparse_data``, ``sparse_coords`` and ``nnz`` store embedded sparse arrays.
+    See `sparse_arrays`_.
 
 :class:`xarray.DataArray` objects are identifiable by having exactly one variable in
 ``data_vars``, conventionally named ``__DataArray__``. Note how ``DataArray.attrs`` are
@@ -137,6 +150,10 @@ across multiple documents, with n=0, n=1, ... etc. The split happens after conve
 the numpy array into a raw bytes buffer, and may result in having numpy points split
 across different documents if ``chunkSize`` is not an exact multiple of the
 ``dtype`` size.
+
+.. note::
+   It is possible for all variables to be embedded into the metadata. In such a case,
+   there won't be any documents in the chunks collection.
 
 
 .. _sparse_arrays:

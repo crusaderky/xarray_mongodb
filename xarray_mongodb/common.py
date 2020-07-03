@@ -33,6 +33,7 @@ from .nep18 import Quantity, UnitRegistry
 
 CHUNKS_INDEX = [("meta_id", 1), ("name", 1), ("chunk", 1)]
 CHUNK_SIZE_BYTES_DEFAULT = 255 * 1024
+EMBED_THRESHOLD_BYTES_DEFAULT = 255 * 1024
 
 
 @dask.base.normalize_token.register(pymongo.collection.Collection)
@@ -56,11 +57,14 @@ class XarrayMongoDBCommon:
         See :class:`~xarray_mongodb.XarrayMongoDB`
     :param int chunk_size_bytes:
         See :class:`~xarray_mongodb.XarrayMongoDB`
+    :param int embed_threshold_bytes:
+        See :class:`~xarray_mongodb.XarrayMongoDB`
     :param pint.registry.UnitRegistry ureg:
         See :class:`~xarray_mongodb.XarrayMongoDB`
     """
 
     chunk_size_bytes: int
+    embed_threshold_bytes: int
     _ureg: Optional[UnitRegistry]
     _has_index: bool
 
@@ -70,11 +74,13 @@ class XarrayMongoDBCommon:
         collection: str,
         *,
         chunk_size_bytes: int,
+        embed_threshold_bytes: int,
         ureg: Optional[UnitRegistry],
     ):
         self.meta = database[collection].meta
         self.chunks = database[collection].chunks
         self.chunk_size_bytes = chunk_size_bytes
+        self.embed_threshold_bytes = embed_threshold_bytes
         self._ureg = ureg
         self._has_index = False
 
@@ -123,7 +129,8 @@ class XarrayMongoDBCommon:
                 meta["name"] = x.name
             x = x.to_dataset(name="__DataArray__")
 
-        # Tuples (size in bytes, variable name)
+        # Tuples (size in bytes, variable name, subdocument)
+        embed_candidates: List[Tuple[int, Hashable, dict]] = []
         variables_data: Dict[Hashable, Union[np.ndarray, dask.array.Array]] = {}
 
         for k, v in x.variables.items():
@@ -143,10 +150,22 @@ class XarrayMongoDBCommon:
                 data = data.magnitude
             if isinstance(data, np.number):
                 data = np.asarray(data)
-            if isinstance(data, (np.ndarray, dask.array.Array)):
-                variables_data[k] = data
-            else:
+            variables_data[k] = data
+            if isinstance(data, np.ndarray):
+                embed_candidates.append((data.dtype.itemsize * data.size, k, subdoc))
+            elif not isinstance(data, dask.array.Array):
+                # Never embed dask variables
                 raise TypeError(f"Unsupported xarray backend: {type(data)}")
+
+        # Embed variables, starting with the smallest ones, until we hit
+        # embed_threshold_bytes
+        embed_candidates.sort(key=lambda t: t[0])
+        avail_bytes = self.embed_threshold_bytes
+        for size, k, subdoc in embed_candidates:
+            avail_bytes -= size
+            if avail_bytes < 0:
+                break
+            subdoc[k]["data"] = variables_data.pop(k).tobytes()
 
         return meta, variables_data
 
@@ -247,7 +266,7 @@ class XarrayMongoDBCommon:
     @staticmethod
     def _prepare_get(
         meta: dict, load: Union[bool, None, Collection[Hashable]]
-    ) -> Tuple[AbstractSet[str], dict]:
+    ) -> Tuple[AbstractSet[str], Optional[dict]]:
         """Helper method of get().
         Normalize the 'load' parameter of get() and build a query for the 'chunks'
         collection.
@@ -260,13 +279,14 @@ class XarrayMongoDBCommon:
             :meth:`xarray_mongodb.XarrayMongoClient.get`.
         :returns:
             - Set of variable names expected from the 'chunks' collection
-            - Query for the 'chunks' collection
+            - Query for the 'chunks' collection, or None if all variables are embedded
         """
         variables = dict(meta["coords"])
         variables.update(meta["data_vars"])
 
         index_coords = {k for k, v in variables.items() if v["dims"] == [k]}
         non_dask_vars = {k for k, v in variables.items() if v["chunks"] is None}
+        embedded_vars = {k for k, v in variables.items() if "data" in v}
 
         if load is True:
             load_norm: AbstractSet[str] = variables.keys()
@@ -278,9 +298,13 @@ class XarrayMongoDBCommon:
             load_norm = index_coords | (variables.keys() & {str(k) for k in load})
         else:
             raise TypeError(load)
+        load_norm = load_norm - embedded_vars
+
+        if not load_norm:
+            return load_norm, None
 
         query = {"meta_id": meta["_id"]}
-        if variables.keys() - load_norm:
+        if variables.keys() - embedded_vars - load_norm:
             query["name"] = {"$in": list(load_norm)}
         return load_norm, query
 
@@ -310,7 +334,13 @@ class XarrayMongoDBCommon:
 
         def build_variables(where: str) -> Iterator[Tuple[str, xarray.Variable]]:
             for var_name, var_meta in meta[where].items():
-                if var_name in load:
+                if "data" in var_meta:
+                    # Embedded variable
+                    assert var_name not in variables
+                    array = self._build_eager_array(
+                        var_meta, {None: chunk.docs_to_array([var_meta], {})}
+                    )
+                elif var_name in load:
                     assert var_name in variables
                     array = self._build_eager_array(var_meta, variables[var_name])
                 else:

@@ -16,6 +16,9 @@ Database structure changes
   ``attrs`` dict. (:issue:`10`).
 - The ``attrs`` dict is now omitted if empty.
 - Added ``attrs`` dict under every element of coords and data_vars (omitted if empty).
+- Embed small variables into the metadata document. Added optional ``data`` key
+  to each variable on the database. Added new parameter ``embed_threshold_bytes`` to
+  control how aggressive embedding should be (see :doc:`api`).
 
 
 Packaging changes

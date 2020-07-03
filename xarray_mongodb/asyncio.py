@@ -9,7 +9,12 @@ import motor.motor_asyncio
 import xarray
 from dask.delayed import Delayed
 
-from .common import CHUNK_SIZE_BYTES_DEFAULT, CHUNKS_INDEX, XarrayMongoDBCommon
+from .common import (
+    CHUNK_SIZE_BYTES_DEFAULT,
+    CHUNKS_INDEX,
+    EMBED_THRESHOLD_BYTES_DEFAULT,
+    XarrayMongoDBCommon,
+)
 from .errors import DocumentNotFoundError
 from .nep18 import UnitRegistry
 
@@ -44,6 +49,8 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         See :class:`~xarray_mongodb.XarrayMongoDB`
     :param int chunk_size_bytes:
         See :class:`~xarray_mongodb.XarrayMongoDB`
+    :param int embed_threshold_bytes:
+        See :class:`~xarray_mongodb.XarrayMongoDB`
     :param pint.registry.UnitRegistry ureg:
         See :class:`~xarray_mongodb.XarrayMongoDB`
     """
@@ -55,6 +62,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         collection: str = "xarray",
         *,
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
+        embed_threshold_bytes: int = EMBED_THRESHOLD_BYTES_DEFAULT,
         ureg: UnitRegistry = None,
     ):
         XarrayMongoDBCommon.__init__(**locals())
@@ -82,5 +90,8 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
         if not meta:
             raise DocumentNotFoundError(_id)
         load_norm, chunks_query = self._prepare_get(meta, load)
-        chunks = await self.chunks.find(chunks_query).to_list(None)
+        if chunks_query:
+            chunks = await self.chunks.find(chunks_query).to_list(None)
+        else:
+            chunks = []
         return self._docs_to_dataset(meta, chunks, load_norm)
