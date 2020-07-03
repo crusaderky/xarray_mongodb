@@ -1,12 +1,4 @@
-How to issue a rMarouane Miftah
-14:18
-￼
-why does it say 0 documents?
-because all documents were below the threshold of 255 kiB, by Guido Imperiale.
-15:11
-￼
-because all documents were below the threshold of 255 kiB
-elease in 15 easy steps
+How to issue a release in 15 easy steps
 
 Time required: about an hour.
 
@@ -28,6 +20,8 @@ Time required: about an hour.
       twine upload dist/xarray_mongodb-0.X.Y*
     You will need to be listed as a package owner at
     https://pypi.python.org/pypi/xarray_mongodb for this to work.
+    If you're not the package owner, you can use an API token. or the username, use
+    __token__. For the password, use the token value, including the pypi- prefix.
  8. Push your changes to master:
       git push origin master
       git push origin --tags
