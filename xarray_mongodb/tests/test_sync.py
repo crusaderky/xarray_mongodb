@@ -2,8 +2,9 @@ import bson
 import pytest
 import xarray
 
-from xarray_mongodb import DocumentNotFoundError
+from xarray_mongodb import DocumentNotFoundError, XarrayMongoDB
 
+from . import assert_chunks_index
 from .data import (
     da,
     ds,
@@ -14,6 +15,34 @@ from .data import (
     expect_meta_minimal,
     parametrize_roundtrip,
 )
+
+
+def test_init(sync_db):
+    xdb = XarrayMongoDB(sync_db, "foo", chunk_size_bytes=123)
+    assert xdb.meta.database is sync_db
+    assert xdb.meta.name == "foo.meta"
+    assert xdb.chunks.database is sync_db
+    assert xdb.chunks.name == "foo.chunks"
+    assert xdb.chunk_size_bytes == 123
+
+
+def test_index_on_put(sync_xdb):
+    indices = list(sync_xdb.chunks.list_indexes())
+    assert not indices
+    sync_xdb.put(xarray.DataArray([1, 2]))
+    indices = list(sync_xdb.chunks.list_indexes())
+    assert_chunks_index(indices)
+
+
+def test_index_on_get(sync_xdb):
+    indices = list(sync_xdb.chunks.list_indexes())
+    assert not indices
+    _id = sync_xdb.meta.insert_one(
+        {"coords": {}, "data_vars": {}, "chunkSize": 261120}
+    ).inserted_id
+    sync_xdb.get(_id)
+    indices = list(sync_xdb.chunks.list_indexes())
+    assert_chunks_index(indices)
 
 
 @parametrize_roundtrip

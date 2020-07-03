@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import xarray
 
-from xarray_mongodb import XarrayMongoDB
+from xarray_mongodb import XarrayMongoDB, XarrayMongoDBAsyncIO
 
 from . import requires_motor, requires_pint
 
@@ -48,12 +48,25 @@ def sample_data(ureg):
 
 
 @requires_pint
-def test_ureg(ureg, ureg_custom, sync_xdb):
-    from xarray_mongodb import XarrayMongoDB
-
+def test_ureg(ureg, ureg_custom, sync_db, sync_xdb):
     assert sync_xdb.ureg is ureg
-    sync_xdb_custom = XarrayMongoDB(sync_xdb.meta.database, ureg=ureg_custom)
-    assert sync_xdb_custom.ureg is ureg_custom
+    xdb2 = XarrayMongoDB(sync_db, ureg=ureg_custom)
+    assert xdb2.ureg is ureg_custom
+    xdb2.ureg = ureg
+    assert xdb2.ureg is ureg
+
+
+@requires_motor
+@requires_pint
+def test_ureg_motor(ureg, ureg_custom, async_db, async_xdb):
+    """The only impact on sync.py and asyncio.py is on the ureg property. Everything
+    else is in common.py/chunks.py and can be just tested using the sync client.
+    """
+    assert async_xdb.ureg is ureg
+    xdb2 = XarrayMongoDBAsyncIO(async_db, ureg=ureg_custom)
+    assert xdb2.ureg is ureg_custom
+    xdb2.ureg = ureg
+    assert xdb2.ureg is ureg
 
 
 @requires_pint
@@ -63,20 +76,8 @@ def test_ureg_global(ureg, ureg_custom_global, sync_xdb):
 
 @requires_motor
 @requires_pint
-def test_ureg_motor(ureg, ureg_custom):
-    """The only impact on sync.py and asyncio.py is on the ureg property. Everything
-    else is in common.py/chunks.py and can be just tested using the sync client.
-    """
-    import motor.motor_asyncio
-    from xarray_mongodb import XarrayMongoDBAsyncIO
-
-    db = motor.motor_asyncio.AsyncIOMotorClient().test_xarray_mongodb
-
-    sync_xdb = XarrayMongoDBAsyncIO(db)
-    assert sync_xdb.ureg is ureg
-
-    sync_xdb = XarrayMongoDBAsyncIO(db, ureg=ureg_custom)
-    assert sync_xdb.ureg is ureg_custom
+def test_ureg_motor_global(ureg, ureg_custom_global, async_xdb):
+    assert async_xdb.ureg is ureg_custom_global
 
 
 @requires_pint

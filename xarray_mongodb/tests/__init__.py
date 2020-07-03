@@ -15,7 +15,7 @@ def _parse_version(v_str):
     for i, v in enumerate(v_list):
         try:
             v_list[i] = int(v)
-        except ValueError:
+        except ValueError:  # pragma: nocover
             pass
 
     return tuple(v_list)
@@ -73,12 +73,23 @@ def _import_or_skip(*args, nep18: bool = False):
 
 has_motor, requires_motor = _import_or_skip(("motor", "2.0"))
 has_pint, requires_pint = _import_or_skip(
-    ("pint", "0.9"), ("numpy", "0.17"), ("dask", "2.0"), ("xarray", "0.13"), nep18=True
-)
-has_sparse, requires_sparse = _import_or_skip(
-    ("sparse", "0.8"),
-    ("numpy", "0.17"),
+    ("pint", "0.10"),
+    ("numpy", "1.17"),
     ("dask", "2.0"),
     ("xarray", "0.13"),
     nep18=True,
 )
+has_sparse, requires_sparse = _import_or_skip(
+    ("sparse", "0.8"),
+    ("numpy", "1.17"),
+    ("dask", "2.0"),
+    ("xarray", "0.13"),
+    nep18=True,
+)
+
+
+def assert_chunks_index(indices: list):
+    """Test that the custom index on the xarray.chunks collection is well-formed
+    """
+    keys = [dict(idx["key"]) for idx in indices]
+    assert keys == [{"_id": 1}, {"meta_id": 1, "name": 1, "chunk": 1}]

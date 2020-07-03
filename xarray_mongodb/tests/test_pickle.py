@@ -6,21 +6,20 @@ interpreter BEFORE unpickling the pymongo.MongoClient object. This is achieved b
 having a function defined by xarray_mongodb before the pymongo.MongoClient object in the
 tuples that constitute the dask graph.
 """
-import os.path
-import pickle
-import subprocess
-import sys
+import multiprocessing
 
 import xarray
 
-LOAD_PICKLE = os.path.join(os.path.dirname(__file__), "load_pickle.py")
 
-
-def test_pickle(sync_xdb, tmpdir):
-    ds = xarray.DataArray([1, 2]).chunk()
-    _, future = sync_xdb.put(ds)
+def test_pickle(sync_xdb):
+    da = xarray.DataArray([1, 2]).chunk()
+    _, future = sync_xdb.put(da)
+    assert not list(sync_xdb.chunks.find({}))
     assert future is not None
 
-    with open(f"{tmpdir}/p.pickle", "wb") as fh:
-        pickle.dump(future, fh)
-    subprocess.check_call([sys.executable, LOAD_PICKLE, f"{tmpdir}/p.pickle"])
+    # Run in an interpreter where xarray_mongodb hasn't been imported yet
+    ctx = multiprocessing.get_context("spawn")
+    proc = ctx.Process(target=future.compute)
+    proc.start()
+    proc.join()
+    assert len(list(sync_xdb.chunks.find({}))) == 1

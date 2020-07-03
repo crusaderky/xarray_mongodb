@@ -51,8 +51,10 @@ Where:
         'shape': [4, 4],
         'type': <'ndarray'|'COO'>,
         'attrs': bson.SON(...) (optional),
+        'units': <str> (optional),
+
+        # For sparse.COO only; omit in case of ndarray
         'fill_value': <bytes> (optional),
-        'units': '<str>' (optional),
      }
 
   - ``chunks`` are the dask chunk sizes at the moment of storing the array, or None if
@@ -63,14 +65,14 @@ Where:
   - ``type`` is the backend array type; ``ndarray`` for dense objects and ``COO``
     for :class:`sparse.COO` objects.
   - ``attrs`` are the variable attributes, if any
-  - ``fill_value`` is the default value of the sparse array.
-    It is a bytes buffer in little endian encoding of as many bytes as implied by dtype.
-    This format allows encoding dtypes that are not native to MongoDB, e.g. complex
-    numbers. Omit when type=ndarray.
   - ``units`` is the string representation of :class:`pint.Unit`, e.g.
     ``kg * m /s ** 2``. The exact meaning of each symbol is deliberately omitted here
     and remitted to pint (or whatever other engine is used to handle units of measures).
     Omit for unit-less objects.
+  - ``fill_value`` is the default value of a sparse array.
+    It is a bytes buffer in little endian encoding of as many bytes as implied by dtype.
+    This format allows encoding dtypes that are not native to MongoDB, e.g. complex
+    numbers. Never present when type=ndarray.
 
 :class:`xarray.DataArray` objects are identifiable by having exactly one variable in
 ``data_vars``, conventionally named ``__DataArray__``. Note how ``DataArray.attrs`` are
@@ -100,10 +102,13 @@ Each document is formatted as follows::
             'shape': [1, 2]},
             'n': 0,
             'type': <'ndarray'|'COO'>,
+
+            # For ndarray only; omit in case of sparse.COO
             'data': <bytes>,
 
-            # For COO only; omit in case of ndarray
-            'coords': <bytes>',
+            # For sparse.COO only; omit in case of ndarray
+            'sparse_data': <bytes>,
+            'sparse_coords': <bytes>',
             'nnz': <int>,
             'fill_value': <bytes>,
         }
@@ -111,7 +116,7 @@ Each document is formatted as follows::
 Where:
 
 - ``meta_id`` is the Object Id of the ``<prefix>.meta`` collection
-- ``name`` is the variable name, matching the one defined in ``<prefix>.meta``
+- ``name`` is the variable name, matching one defined in ``<prefix>.meta``
 - ``chunk`` is the dask chunk ID, or None for variables that were not backed by dask at
   the moment of storing the object
 - ``dtype`` is the numpy dtype. It may be mismatched with, and overrides, the
@@ -133,6 +138,9 @@ the numpy array into a raw bytes buffer, and may result in having numpy points s
 across different documents if ``chunkSize`` is not an exact multiple of the
 ``dtype`` size.
 
+
+.. _sparse_arrays:
+
 Sparse arrays
 -------------
 Sparse arrays (constructed using the Python class :class:`sparse.COO`) differ from
@@ -152,30 +160,31 @@ dense arrays as follows:
     explicitly listed
   - Extra field ``nnz`` is a non-negative integer (possibly zero) counting the number of
     cells that differ from ``fill_value``.
-  - The ``data`` field contains sparse values. It is a one-dimensional array of the
-    indicated dtype with as many elements as ``nnz``.
-  - Extra field ``coords`` is a binary blob representing a two-dimensional numpy array, with
-    as many rows as the number of dimensions (see ``shape``) and as many columns as ``nnz``.
-    It always contains unsigned integers in little endian format, regardless of the
-    declared dtype. The word length is:
+  - There is no ``data`` field.
+  - The ``sparse_data`` field contains sparse values. It is a binary blob representing a
+    one-dimensional numpy array of the indicated dtype with as many elements as ``nnz``.
+  - The field ``sparse_coords`` is a binary blob representing a two-dimensional numpy
+    array, with as many rows as the number of dimensions (see ``shape``) and as many
+    columns as ``nnz``. It always contains unsigned integers in little endian format,
+    regardless of the declared dtype. The word length is:
 
     - If max(shape) < 256, 1 byte
     - If 256 <= max(shape) < 2**16, 2 bytes
     - If 2**16 <= max(shape) < 2**32, 4 bytes
     - Otherwise, 8 bytes
 
-    Each column of ``coords`` indicates the coordinates of the matching value in
-    ``data``.
+    Each column of ``sparse_coords`` indicates the coordinates of the matching value in
+    ``sparse_data``.
 
 See next section for examples.
 
-When the total of the ``data`` and ``coords`` bytes exceeds ``chunkSize``, then the information
-is split across multiple documents, as follows:
+When the total of the ``sparse_data`` and ``sparse_coords`` bytes exceeds ``chunkSize``,
+then the information is split across multiple documents, as follows:
 
-1. Documents containing slices of ``data``; in all but the last one, ``coords`` is a
-   bytes object of size 0
-2. Documents containing slices of ``coords``; in all but the first one, ``data`` is a
-   bytes object of size 0
+1. Documents containing slices of ``sparse_data``; in all but the last one,
+   ``sparse_coords`` is a bytes object of size 0
+2. Documents containing slices of ``sparse_coords``; in all but the first one,
+   ``sparse_data`` is a bytes object of size 0
 
 .. note::
    When nnz=0, both data and coords are bytes objects of size 0.
@@ -218,9 +227,9 @@ chunks document (sparse)::
         'type': 'COO',
         'nnz': 2,
         'fill_value': b'\x00\x00\x00\x00\x00\x00\x00\x00',
-        'data': # 16 bytes buffer that contains [1.1, 2.2]
-        'coords': # 4 bytes buffer that contains [[0, 1,
-                  #                               [1, 2]]
+        'sparse_data': # 16 bytes buffer that contains [1.1, 2.2]
+        'sparse_coords': # 4 bytes buffer that contains [[0, 1,
+                         #                               [1, 2]]
     }
 
 Indexing

@@ -4,9 +4,11 @@ from collections import defaultdict
 from functools import partial
 from itertools import groupby
 from typing import (
+    AbstractSet,
     Collection,
     DefaultDict,
     Dict,
+    Hashable,
     Iterator,
     List,
     Optional,
@@ -51,14 +53,11 @@ class XarrayMongoDBCommon:
         :class:`pymongo.database.Database` or
         :class:`motor.motor_asyncio.AsyncIOMotorDatabase`
     :param str collection:
-        prefix of the collections to store the xarray data. Two collections will
-        actually be created, <collection>.meta and <collection>.chunks.
+        See :class:`~xarray_mongodb.XarrayMongoDB`
     :param int chunk_size_bytes:
-        Size of the payload in a document in the chunks collection. Not to be confused
-        with dask chunks. dask chunks that are larger than chunk_size_bytes will be
-        transparently split across multiple MongoDB documents.
-    :param pint.unitregistry.UnitRegistry ureg:
-        pint registry to allow putting and getting arrays with units.
+        See :class:`~xarray_mongodb.XarrayMongoDB`
+    :param pint.registry.UnitRegistry ureg:
+        See :class:`~xarray_mongodb.XarrayMongoDB`
     """
 
     chunk_size_bytes: int
@@ -69,6 +68,7 @@ class XarrayMongoDBCommon:
         self,
         database,
         collection: str,
+        *,
         chunk_size_bytes: int,
         ureg: Optional[UnitRegistry],
     ):
@@ -88,21 +88,27 @@ class XarrayMongoDBCommon:
         3. if the global registry was never set, a standard registry built with
            :file:`defaults_en.txt`
         """
-        if self._ureg is not None:
+        if self._ureg:
             return self._ureg
 
         import pint
 
-        return pint._APP_REGISTRY
+        return pint.get_application_registry()
 
     @ureg.setter
     def ureg(self, value: Optional[UnitRegistry]) -> None:
         self._ureg = value
 
-    def _dataset_to_meta(self, x: Union[xarray.DataArray, xarray.Dataset]) -> dict:
+    def _dataset_to_meta(
+        self, x: Union[xarray.DataArray, xarray.Dataset]
+    ) -> Tuple[dict, Dict[Hashable, Union[np.ndarray, dask.array.Array]]]:
         """Helper function of put().
         Convert a DataArray or Dataset into the dict to insert into the 'meta'
         collection.
+
+        :returns:
+            - meta document
+            - raw variable data to be inserted into the 'chunks' collection
         """
         meta = {
             "coords": bson.SON(),
@@ -117,6 +123,9 @@ class XarrayMongoDBCommon:
                 meta["name"] = x.name
             x = x.to_dataset(name="__DataArray__")
 
+        # Tuples (size in bytes, variable name)
+        variables_data: Dict[Hashable, Union[np.ndarray, dask.array.Array]] = {}
+
         for k, v in x.variables.items():
             subdoc = meta["coords"] if k in x.coords else meta["data_vars"]
             subdoc[k] = {
@@ -128,21 +137,31 @@ class XarrayMongoDBCommon:
             }
             if v.attrs and k != "__DataArray__":
                 subdoc[k]["attrs"] = v.attrs
-            if isinstance(v.data, Quantity):
-                subdoc[k]["units"] = str(v.data.units)
+            data = v.data
+            if isinstance(data, Quantity):
+                subdoc[k]["units"] = str(data.units)
+                data = data.magnitude
+            if isinstance(data, np.number):
+                data = np.asarray(data)
+            if isinstance(data, (np.ndarray, dask.array.Array)):
+                variables_data[k] = data
+            else:
+                raise TypeError(f"Unsupported xarray backend: {type(data)}")
 
-        return meta
+        return meta, variables_data
 
     def _dataset_to_chunks(
-        self, x: Union[xarray.DataArray, xarray.Dataset], meta_id: bson.ObjectId
+        self,
+        variables_data: Dict[Hashable, Union[np.ndarray, dask.array.Array]],
+        meta_id: bson.ObjectId,
     ) -> Tuple[List[dict], Optional[Delayed]]:
         """Helper method of put().
         Convert a DataArray or Dataset into the list of dicts to insert into the
         'chunks' collection. For dask variables, generate a
         :class:`~dask.delayed.Delayed` object.
 
-        :param x:
-            :class:`xarray.DataArray` or :class:`xarray.Dataset`
+        :param variables_data:
+            raw variables to be inserted into the 'chunks' collection
         :param bson.ObjectId meta_id:
             id_ of the document in the 'meta' collection
         :returns:
@@ -154,9 +173,6 @@ class XarrayMongoDBCommon:
                 :class:`~dask.delayed.Delayed`, or None if none of the variables use
                 dask.
         """
-        if isinstance(x, xarray.DataArray):
-            x = x.to_dataset(name="__DataArray__")
-
         # MongoDB documents to be inserted in the 'chunks' collection
         chunks = []  # type: List[dict]
 
@@ -165,13 +181,7 @@ class XarrayMongoDBCommon:
         layers = {}  # type: Dict[str, Dict[str, tuple]]
         dependencies = {}  # type: Dict[str, Set[str]]
 
-        for var_name, variable in x.variables.items():
-            data = variable.data
-            if isinstance(data, Quantity):
-                # units have already been recorded in the metadata
-                data = data.magnitude
-            if isinstance(data, np.number):
-                data = np.asarray(data)
+        for var_name, data in variables_data.items():
             if isinstance(data, dask.array.Array):
                 put_keys, put_graph = self._delayed_put(meta_id, str(var_name), data)
                 keys += put_keys
@@ -188,7 +198,7 @@ class XarrayMongoDBCommon:
                     chunk_size_bytes=self.chunk_size_bytes,
                 )
             else:
-                raise TypeError("Unsupported xarray backend: %s" % (type(data)))
+                raise AssertionError("unreachable")  # pragma: nocover
 
         if not keys:
             return chunks, None
@@ -235,11 +245,12 @@ class XarrayMongoDBCommon:
         return keys, graph
 
     @staticmethod
-    def _normalize_load(
-        meta: dict, load: Union[bool, None, Collection[str]]
-    ) -> Set[str]:
+    def _prepare_get(
+        meta: dict, load: Union[bool, None, Collection[Hashable]]
+    ) -> Tuple[AbstractSet[str], dict]:
         """Helper method of get().
-        Normalize the 'load' parameter of get().
+        Normalize the 'load' parameter of get() and build a query for the 'chunks'
+        collection.
 
         :param dict meta:
             document from the 'meta' collection
@@ -248,41 +259,33 @@ class XarrayMongoDBCommon:
             which may or may not exist. See
             :meth:`xarray_mongodb.XarrayMongoClient.get`.
         :returns:
-            set of variable names to be loaded
+            - Set of variable names expected from the 'chunks' collection
+            - Query for the 'chunks' collection
         """
         variables = dict(meta["coords"])
         variables.update(meta["data_vars"])
 
-        all_vars = set(variables.keys())
         index_coords = {k for k, v in variables.items() if v["dims"] == [k]}
-        numpy_vars = {k for k, v in variables.items() if v["chunks"] is None}
+        non_dask_vars = {k for k, v in variables.items() if v["chunks"] is None}
 
         if load is True:
-            return all_vars
-        if load is False:
-            return index_coords
-        if load is None:
-            return index_coords | numpy_vars
-        if isinstance(load, Collection) and not isinstance(load, str):
-            return index_coords | (all_vars & set(load))
-        raise TypeError(load)
+            load_norm: AbstractSet[str] = variables.keys()
+        elif load is False:
+            load_norm = index_coords
+        elif load is None:
+            load_norm = index_coords | non_dask_vars
+        elif isinstance(load, Collection) and not isinstance(load, str):
+            load_norm = index_coords | (variables.keys() & {str(k) for k in load})
+        else:
+            raise TypeError(load)
 
-    @staticmethod
-    def _chunks_query(meta: dict, load: Set[str]) -> dict:
-        """Helper method of get().
-
-        :param dict meta:
-            document from the 'meta' collection
-        :param set load:
-            set of variable names that need to be loaded
-            immediately
-        :returns:
-           find query for the 'chunk' collection
-        """
-        return {"meta_id": meta["_id"], "name": {"$in": list(load)}}
+        query = {"meta_id": meta["_id"]}
+        if variables.keys() - load_norm:
+            query["name"] = {"$in": list(load_norm)}
+        return load_norm, query
 
     def _docs_to_dataset(
-        self, meta: dict, chunks: List[dict], load: Set[str]
+        self, meta: dict, chunks: List[dict], load: AbstractSet[str]
     ) -> Union[xarray.DataArray, xarray.Dataset]:
         """Helper method of get().
         Convert a document dicts loaded from MongoDB to either a DataArray or a Dataset.
@@ -308,7 +311,7 @@ class XarrayMongoDBCommon:
         def build_variables(where: str) -> Iterator[Tuple[str, xarray.Variable]]:
             for var_name, var_meta in meta[where].items():
                 if var_name in load:
-                    assert var_name in variables, var_name
+                    assert var_name in variables
                     array = self._build_eager_array(var_meta, variables[var_name])
                 else:
                     assert var_name not in variables

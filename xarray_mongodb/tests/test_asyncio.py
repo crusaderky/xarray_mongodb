@@ -2,19 +2,45 @@ import bson
 import pytest
 import xarray
 
-from xarray_mongodb import DocumentNotFoundError
+from xarray_mongodb import DocumentNotFoundError, XarrayMongoDBAsyncIO
 
-from . import requires_motor
-from .data import (
-    da,
-    ds,
-    expect_da_chunks,
-    expect_da_meta,
-    expect_ds_chunks,
-    expect_ds_meta,
-    expect_meta_minimal,
-    parametrize_roundtrip,
-)
+from . import assert_chunks_index, requires_motor
+from .data import ds, expect_meta_minimal, parametrize_roundtrip
+
+
+@requires_motor
+def test_init(async_db):
+    xdb = XarrayMongoDBAsyncIO(async_db, "foo", chunk_size_bytes=123)
+    assert xdb.meta.database is async_db
+    assert xdb.meta.name == "foo.meta"
+    assert xdb.chunks.database is async_db
+    assert xdb.chunks.name == "foo.chunks"
+    assert xdb.chunk_size_bytes == 123
+
+
+@requires_motor
+@pytest.mark.asyncio
+async def test_index_on_put(async_xdb):
+    indices = await async_xdb.chunks.list_indexes().to_list(None)
+    assert not indices
+    await async_xdb.put(xarray.DataArray([1, 2]))
+    indices = await async_xdb.chunks.list_indexes().to_list(None)
+    assert_chunks_index(indices)
+
+
+@requires_motor
+@pytest.mark.asyncio
+async def test_index_on_get(async_xdb):
+    indices = await async_xdb.chunks.list_indexes().to_list(None)
+    assert not indices
+    _id = (
+        await async_xdb.meta.insert_one(
+            {"coords": {}, "data_vars": {}, "chunkSize": 261120}
+        )
+    ).inserted_id
+    await async_xdb.get(_id)
+    indices = await async_xdb.chunks.list_indexes().to_list(None)
+    assert_chunks_index(indices)
 
 
 @requires_motor
@@ -36,26 +62,6 @@ async def test_roundtrip(async_xdb, compute, load, chunks):
 
 @requires_motor
 @pytest.mark.asyncio
-async def test_db_contents(async_xdb):
-    assert async_xdb.meta.name.endswith(".meta")
-    assert async_xdb.chunks.name.endswith(".chunks")
-    assert async_xdb.meta.name.split(".")[:-1] == async_xdb.chunks.name.split(".")[:-1]
-
-    _id, future = await async_xdb.put(ds)
-    future.compute()
-
-    assert await async_xdb.meta.find().to_list(None) == expect_ds_meta(_id)
-    chunks = sorted(
-        await async_xdb.chunks.find({}, {"_id": False}).to_list(None),
-        key=lambda doc: (doc["name"], doc["chunk"]),
-    )
-    assert chunks == sorted(
-        expect_ds_chunks(_id), key=lambda doc: (doc["name"], doc["chunk"])
-    )
-
-
-@requires_motor
-@pytest.mark.asyncio
 async def test_minimal(async_xdb):
     ds_min = xarray.Dataset()
     _id, _ = await async_xdb.put(ds_min)
@@ -67,109 +73,7 @@ async def test_minimal(async_xdb):
 
 @requires_motor
 @pytest.mark.asyncio
-@pytest.mark.parametrize("name", [None, "foo"])
-async def test_dataarray(async_xdb, name):
-    da2 = da.copy()
-    if name:
-        da2.name = name
-    _id, _ = await async_xdb.put(da2)
-
-    assert await async_xdb.meta.find().to_list(None) == expect_da_meta(_id, name)
-    assert await async_xdb.chunks.find({}, {"_id": False}).to_list(
-        None
-    ) == expect_da_chunks(_id)
-    out = await async_xdb.get(_id)
-    xarray.testing.assert_identical(da2, out)
-
-
-@requires_motor
-@pytest.mark.asyncio
-async def test_multisegment(async_xdb):
-    async_xdb.chunk_size_bytes = 4
-    _id, future = await async_xdb.put(ds)
-    future.compute()
-    assert await async_xdb.chunks.find_one({"n": 2})
-    ds2 = await async_xdb.get(_id)
-    xarray.testing.assert_identical(ds, ds2)
-
-
-@requires_motor
-@pytest.mark.asyncio
-async def test_size_zero(async_xdb):
-    a = xarray.DataArray([])
-    _id, _ = await async_xdb.put(a)
-    a2 = await async_xdb.get(_id)
-    xarray.testing.assert_identical(a, a2)
-
-
-@requires_motor
-@pytest.mark.asyncio
-async def test_nan_chunks(async_xdb):
-    """Test the case where the metadata of a dask array can't know the
-    chunk sizes, as they are defined at the moment of computing it.
-
-    .. note::
-       We're triggering a degenerate case where one of the chunks has size 0.
-    """
-    a = xarray.DataArray([1, 2, 3, 4]).chunk(2)
-
-    # two xarray bugs at the moment of writing:
-    # https://github.com/pydata/xarray/issues/2801
-    # a = a[a > 2]
-    a = xarray.DataArray(a.data[a.data > 2])
-
-    assert str(a.shape) == "(nan,)"
-    assert str(a.chunks) == "((nan, nan),)"
-    _id, future = await async_xdb.put(a)
-    future.compute()
-    a2 = await async_xdb.get(_id)
-    assert str(a2.shape) == "(nan,)"
-    assert str(a2.chunks) == "((nan, nan),)"
-
-    # second xarray bug
-    # xarray.testing.assert_identical(a, a2)
-    xarray.testing.assert_identical(
-        xarray.DataArray(a.data.compute()), xarray.DataArray(a2.data.compute())
-    )
-
-
-@requires_motor
-@pytest.mark.asyncio
 async def test_meta_not_found(async_xdb):
     with pytest.raises(DocumentNotFoundError) as ex:
         await async_xdb.get(bson.ObjectId("deadbeefdeadbeefdeadbeef"))
     assert str(ex.value) == "deadbeefdeadbeefdeadbeef"
-
-
-@requires_motor
-@pytest.mark.asyncio
-async def test_no_segments_found(async_xdb):
-    _id, future = await async_xdb.put(ds)
-    future.compute()
-    await async_xdb.chunks.delete_many({"name": "d", "chunk": [1, 0]})
-    ds2 = await async_xdb.get(_id)
-    with pytest.raises(DocumentNotFoundError) as ex:
-        ds2.compute()
-    assert str(ex.value) == (
-        f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}"
-    )
-
-
-@requires_motor
-@pytest.mark.asyncio
-# A missing chunk with chunk_size_bytes=2 causes np.frombuffer to crash with
-# 'ValueError: buffer size must be a multiple of element size'.
-# A missing chunk with chunk_size_bytes=8 causes ndarray.reshape to crash with
-# 'ValueError: cannot reshape array of size 1 into shape (1,2)'.
-@pytest.mark.parametrize("chunk_size_bytes", (2, 8))
-async def test_some_segments_not_found(async_xdb, chunk_size_bytes):
-    async_xdb.chunk_size_bytes = chunk_size_bytes
-    _id, future = await async_xdb.put(ds)
-    future.compute()
-    await async_xdb.chunks.delete_one({"name": "d", "chunk": [1, 0], "n": 1})
-    ds2 = await async_xdb.get(_id)
-    with pytest.raises(DocumentNotFoundError) as ex:
-        ds2.compute()
-    assert str(ex.value) == (
-        f"{{'meta_id': ObjectId('{_id}'), 'name': 'd', 'chunk': (1, 0)}}"
-    )

@@ -4,13 +4,13 @@ from . import patch_pymongo
 from .errors import DocumentNotFoundError  # noqa: F401
 from .sync import XarrayMongoDB  # noqa: F401
 
-try:  # pragma: no cover
+try:
     __version__ = pkg_resources.get_distribution("xarray_mongodb").version
 except Exception:  # pragma: no cover
     # No installed copy
-    __version__ = "unknown"
+    __version__ = "999"
 
-# Make PyMongo objects serialisable
+# Make PyMongo objects serializable
 patch_pymongo.patch_pymongo()
 del patch_pymongo
 

@@ -36,10 +36,11 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         self,
         database: pymongo.database.Database,
         collection: str = "xarray",
+        *,
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
         ureg: UnitRegistry = None,
     ):
-        super().__init__(database, collection, chunk_size_bytes, ureg)
+        XarrayMongoDBCommon.__init__(**locals())
 
     def _create_index(self) -> None:
         """Create the index on the 'chunk' collection
@@ -76,9 +77,9 @@ class XarrayMongoDB(XarrayMongoDBCommon):
            <https://distributed.dask.org/en/latest/>`_.
         """
         self._create_index()
-        meta = self._dataset_to_meta(x)
+        meta, variables_data = self._dataset_to_meta(x)
         _id = self.meta.insert_one(meta).inserted_id
-        chunks, delayed = self._dataset_to_chunks(x, _id)
+        chunks, delayed = self._dataset_to_chunks(variables_data, _id)
         if chunks:
             self.chunks.insert_many(chunks)
         return _id, delayed
@@ -143,7 +144,6 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         meta = self.meta.find_one({"_id": _id})
         if not meta:
             raise DocumentNotFoundError(_id)
-        load_norm = self._normalize_load(meta, load)
-        chunks_query = self._chunks_query(meta, load_norm)
+        load_norm, chunks_query = self._prepare_get(meta, load)
         chunks = list(self.chunks.find(chunks_query))
         return self._docs_to_dataset(meta, chunks, load_norm)

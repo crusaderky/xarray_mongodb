@@ -58,7 +58,7 @@ def array_to_docs(
     the 'chunks' collection
     """
     if not isinstance(array, np.ndarray):
-        raise TypeError("Unsupported xarray backend: %s" % (type(array)))
+        raise TypeError(f"Unsupported xarray backend: {type(array)}")
 
     buffer = array.tobytes()
     # Guarantee at least one document in case of size 0
