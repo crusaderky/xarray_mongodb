@@ -22,9 +22,9 @@ except ImportError:
 
 # pint imports or dummies
 try:
-    from pint.unit import _Unit as Unit
-    from pint.quantity import _Quantity as Quantity
     from pint import UnitRegistry
+    from pint.quantity import _Quantity as Quantity
+    from pint.unit import _Unit as Unit
 
 except ImportError:
 
