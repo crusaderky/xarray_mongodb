@@ -33,6 +33,10 @@ else:
 
 del has_motor
 
+# Correct inheritance and type annotations in intersphinx
+DocumentNotFoundError.__module__ = "xarray_mongodb"
+XarrayMongoDB.__module__ = "xarray_mongodb"
+XarrayMongoDBAsyncIO.__module__ = "xarray_mongodb"
 
 __all__ = (
     "__version__",
