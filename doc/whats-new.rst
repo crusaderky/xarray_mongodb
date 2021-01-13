@@ -5,6 +5,12 @@ What's New
 
 .. _whats-new.0.3.0:
 
+v0.3.0 (unreleased)
+===================
+
+
+.. _whats-new.0.2.1:
+
 v0.2.1 (2021-01-13)
 ===================
 - Support for dask 2020.12
