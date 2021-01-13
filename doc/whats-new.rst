@@ -5,7 +5,7 @@ What's New
 
 .. _whats-new.0.3.0:
 
-v0.3.0 (unreleased)
+v0.2.1 (2021-01-13)
 ===================
 - Support for dask 2020.12
 - CI tests for MongoDB 4.4 and Python 3.9
