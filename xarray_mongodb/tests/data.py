@@ -256,8 +256,7 @@ def expect_da_chunks(_id):
 
 
 def expect_meta_minimal(_id):
-    """Metadata of an empty dataset
-    """
+    """Metadata of an empty dataset"""
     return [
         {"_id": _id, "chunkSize": 261120, "coords": {}, "data_vars": {}},
     ]

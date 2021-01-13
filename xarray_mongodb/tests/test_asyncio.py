@@ -51,7 +51,12 @@ async def test_index_on_get(async_xdb):
 @parametrize_roundtrip
 @pytest.mark.parametrize("chunk_size_bytes", [16, 2 ** 20])
 async def test_roundtrip(
-    async_xdb, compute, load, chunks, embed_threshold_bytes, chunk_size_bytes,
+    async_xdb,
+    compute,
+    load,
+    chunks,
+    embed_threshold_bytes,
+    chunk_size_bytes,
 ):
     async_xdb.chunk_size_bytes = chunk_size_bytes
     async_xdb.embed_threshold_bytes = embed_threshold_bytes

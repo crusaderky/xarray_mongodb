@@ -71,8 +71,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
     async def put(
         self, x: Union[xarray.DataArray, xarray.Dataset]
     ) -> Tuple[bson.ObjectId, Optional[Delayed]]:
-        """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.put`
-        """
+        """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.put`"""
         meta, variables_data = self._dataset_to_meta(x)
         _id = (await self.meta.insert_one(meta)).inserted_id
         chunks, delayed = self._dataset_to_chunks(variables_data, _id)
@@ -84,8 +83,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
     async def get(
         self, _id: bson.ObjectId, load: Union[bool, None, Collection[str]] = None
     ) -> Union[xarray.DataArray, xarray.Dataset]:
-        """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.get`
-        """
+        """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.get`"""
         meta = await self.meta.find_one({"_id": _id})
         if not meta:
             raise DocumentNotFoundError(_id)

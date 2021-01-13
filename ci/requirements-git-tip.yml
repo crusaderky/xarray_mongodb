@@ -1,23 +1,26 @@
 name: xarray_mongodb
 channels:
+  - numba/label/dev
   - conda-forge
   - defaults
 dependencies:
+  - python=3.9
   - pip
-  - python=3.8
   - pytest
   - pytest-asyncio
   - pytest-cov
+  - numba  # This is loaded from numba/label/dev instead of conda-forge
+
   # While it could make sense to compile these from sources, it would take just too
   # long. So we'll be content with the latest versions from conda-forge.
   - cloudpickle  # Dependency of dask[array]
-  - numba >=0.50  # Dependency of sparse
   - numpy
   - pandas
   - pymongo
   - scipy
   - toolz  # Dependency of dask[delayed]
   - yaml  # Dependency of dask
+
   # Compile from sources using the git master tip
   - pip:
     - git+https://github.com/dask/dask.git

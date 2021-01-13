@@ -3,8 +3,11 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
-  - sphinx<3
+  # This must match ../readthedocs.yml
+  # Python 3.9 not yet supported by readthedocs CI
+  # See https://docs.readthedocs.io/en/latest/config-file/v2.html#build-image
+  - python=3.8
+  - sphinx
   - sphinx_rtd_theme
   - dask
   - motor

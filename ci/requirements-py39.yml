@@ -2,8 +2,9 @@ name: xarray_mongodb
 channels:
   - conda-forge
   - defaults
+  - numba/label/dev  # Numba dev branch, needed until numba 0.53 is released
 dependencies:
-  - python=3.8
+  - python=3.9
   - dask
   - motor
   - numpy

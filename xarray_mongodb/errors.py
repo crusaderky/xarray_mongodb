@@ -3,5 +3,4 @@
 
 
 class DocumentNotFoundError(Exception):
-    """One or more documents not found in MongoDB
-    """
+    """One or more documents not found in MongoDB"""

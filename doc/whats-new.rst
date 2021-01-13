@@ -7,6 +7,9 @@ What's New
 
 v0.3.0 (unreleased)
 ===================
+- Support for dask 2020.12
+- CI tests for MongoDB 4.4 and Python 3.9
+- Use Sphinx 3 for documentation
 
 
 .. _whats-new.0.2.0:

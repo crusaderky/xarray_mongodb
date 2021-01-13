@@ -292,3 +292,6 @@ intersphinx_mapping = {
     "sparse": ("https://sparse.pydata.org/en/latest/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
 }
+
+# Work around many incompatibilities with intersphinx
+autodoc_typehints = "none"

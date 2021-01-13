@@ -406,7 +406,7 @@ class XarrayMongoDBCommon:
     def _build_dask_array(
         self, meta: dict, name: str, meta_id: bson.ObjectId
     ) -> dask.array.Array:
-        """Build a dask array with np.ndarray or sparse.COO chunks from meta-data
+        """Build a dask array with np.ndarray or sparse.COO chunks from metadata
 
         :param dict meta:
             sub-document from the 'meta' collection under the 'coords' or 'data_vars'
@@ -428,7 +428,7 @@ class XarrayMongoDBCommon:
         array = dask.array.Array(
             {}, name=dsk_name, shape=meta["shape"], chunks=chunks, dtype=meta["dtype"]
         )
-
+        dsk = {}
         for key in dask.core.flatten(array.__dask_keys__()):
             load_func = partial(
                 chunk.mongodb_get_array,
@@ -439,9 +439,8 @@ class XarrayMongoDBCommon:
                 # dask array with shape=()
                 chunk=key[1:] if meta["chunks"] is not None else None,
             )
-
-            # See dask.highlevelgraph.HighLevelGraph
-            array.dask.layers[dsk_name][key] = (load_func,)
+            dsk[key] = (load_func,)
+        array.dask = dsk
         return array
 
 

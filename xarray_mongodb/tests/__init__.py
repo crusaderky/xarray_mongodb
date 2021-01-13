@@ -5,8 +5,7 @@ import pytest
 
 
 def _parse_version(v_str):
-    """Return sortable version of a dependency module
-    """
+    """Return sortable version of a dependency module"""
     # Some development versions are name 1.2.3+4
     # Others are 1.2.3.dev4. Normalize them.
     v_str = re.sub(r"\+.*", ".dev0", v_str)
@@ -89,7 +88,6 @@ has_sparse, requires_sparse = _import_or_skip(
 
 
 def assert_chunks_index(indices: list):
-    """Test that the custom index on the xarray.chunks collection is well-formed
-    """
+    """Test that the custom index on the xarray.chunks collection is well-formed"""
     keys = [dict(idx["key"]) for idx in indices]
     assert keys == [{"_id": 1}, {"meta_id": 1, "name": 1, "chunk": 1}]

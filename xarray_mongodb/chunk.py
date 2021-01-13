@@ -20,8 +20,7 @@ def mongodb_put_array(
     chunk: tuple,
     chunk_size_bytes: int,
 ) -> None:
-    """Insert a single chunk into MongoDB
-    """
+    """Insert a single chunk into MongoDB"""
     docs = array_to_docs(
         array,
         meta_id=meta_id,
@@ -88,7 +87,7 @@ def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
         tag to use when raising DocumentNotFoundError
     :raises DocumentNotFoundError:
         No documents, or one or more documents are missing
-        """
+    """
     if not docs:
         raise DocumentNotFoundError(find_key)
     buffer = b"".join([doc["data"] for doc in docs])

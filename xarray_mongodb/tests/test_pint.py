@@ -167,8 +167,7 @@ def test_db_contents(ureg, sync_xdb):
 
 @requires_pint
 def test_custom_units(ureg, ureg_custom, sync_xdb):
-    """dask _meta is a np.ndarray, but dask payload is a Quantity
-    """
+    """dask _meta is a np.ndarray, but dask payload is a Quantity"""
     import pint
 
     a = xarray.DataArray(ureg_custom.Quantity([1], "test_unit"))

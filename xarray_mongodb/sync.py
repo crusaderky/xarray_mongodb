@@ -85,9 +85,9 @@ class XarrayMongoDB(XarrayMongoDBCommon):
             Tuple of:
 
             - MongoDB _id of the inserted object
-            - dask future, or None if there are no variables using dask. It must be
-              explicitly computed in order to fully store the Dataset/DataArray on the
-              database.
+            - dask delayed object, or None if there are no variables using dask. It must
+              be explicitly computed in order to fully store the Dataset/DataArray on
+              the database.
 
         .. warning::
            The dask future contains access full credentials to the MongoDB server. This
