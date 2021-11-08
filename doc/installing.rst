@@ -5,12 +5,12 @@ Installation
 
 Required dependencies
 ---------------------
-- Python 3.6 or later
+- Python 3.7 or later
 - MongoDB 3.6 or later
 - `xarray <http://xarray.pydata.org>`_
 - `dask <https://dask.org/>`_
 - `toolz <https://toolz.readthedocs.io/>`_
-- `PyMongo <https://api.mongodb.com/python/current/>`_
+- `PyMongo <https://pymongo.readthedocs.io/en/stable/>`_
 
 
 Optional dependencies
@@ -41,9 +41,9 @@ dependencies:
 You can see the actual minimum supported and tested versions:
 
 - `For using pint and/or sparse
-  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py36-min-nep18.yml>`_
+  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py37-min-nep18.yml>`_
 - `For everything else
-  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py36-min-all-deps.yml>`_
+  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py37-min-all-deps.yml>`_
 
 
 .. _build_sphinx:

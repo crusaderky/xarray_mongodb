@@ -39,7 +39,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
            - Embedded variables ignore the ``load`` parameter of :meth:`get`
            - dask variables are never embedded, regardless of size
            - set ``embed_threshold_bytes=0`` to force all buffers to be saved to
-             <collection>.chunks, witht he only exception of size zero non-dask
+             <collection>.chunks, with the only exception of size zero non-dask
              variables
            - size zero non-dask variables are always embedded
 

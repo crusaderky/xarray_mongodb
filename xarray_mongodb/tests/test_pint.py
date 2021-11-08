@@ -12,11 +12,22 @@ from . import requires_motor, requires_pint
 def ureg():
     import pint
 
-    return pint._APP_REGISTRY
+    # Remove try except block after min pint dependency version becomes > 0.18
+    try:
+        # pint.__version__ > 0.18
+        application_registry = pint.application_registry
+    except AttributeError:
+        application_registry = pint._APP_REGISTRY
+
+    try:
+        # pint.__version__ > 0.18
+        return application_registry.get()
+    except AttributeError:
+        return application_registry
 
 
 @pytest.fixture
-def ureg_custom():
+def custom_ureg():
     import pint
 
     ureg = pint.UnitRegistry()
@@ -25,12 +36,17 @@ def ureg_custom():
 
 
 @pytest.fixture
-def ureg_custom_global():
+def custom_ureg_global():
     import pint
 
     ureg = pint.UnitRegistry()
     ureg.define("test_unit = 123 kg")
     prev = pint.get_application_registry()
+    try:
+        # pint.__version__ > 0.18
+        prev = prev.get()
+    except AttributeError:
+        pass
     pint.set_application_registry(ureg)
     yield ureg
     pint.set_application_registry(prev)
@@ -48,36 +64,36 @@ def sample_data(ureg):
 
 
 @requires_pint
-def test_ureg(ureg, ureg_custom, sync_db, sync_xdb):
+def test_ureg(ureg, custom_ureg, sync_db, sync_xdb):
     assert sync_xdb.ureg is ureg
-    xdb2 = XarrayMongoDB(sync_db, ureg=ureg_custom)
-    assert xdb2.ureg is ureg_custom
+    xdb2 = XarrayMongoDB(sync_db, ureg=custom_ureg)
+    assert xdb2.ureg is custom_ureg
     xdb2.ureg = ureg
     assert xdb2.ureg is ureg
 
 
 @requires_motor
 @requires_pint
-def test_ureg_motor(ureg, ureg_custom, async_db, async_xdb):
+def test_ureg_motor(ureg, custom_ureg, async_db, async_xdb):
     """The only impact on sync.py and asyncio.py is on the ureg property. Everything
     else is in common.py/chunks.py and can be just tested using the sync client.
     """
     assert async_xdb.ureg is ureg
-    xdb2 = XarrayMongoDBAsyncIO(async_db, ureg=ureg_custom)
-    assert xdb2.ureg is ureg_custom
+    xdb2 = XarrayMongoDBAsyncIO(async_db, ureg=custom_ureg)
+    assert xdb2.ureg is custom_ureg
     xdb2.ureg = ureg
     assert xdb2.ureg is ureg
 
 
 @requires_pint
-def test_ureg_global(ureg, ureg_custom_global, sync_xdb):
-    assert sync_xdb.ureg is ureg_custom_global
+def test_ureg_global(custom_ureg_global, sync_xdb):
+    assert sync_xdb.ureg is custom_ureg_global
 
 
 @requires_motor
 @requires_pint
-def test_ureg_motor_global(ureg, ureg_custom_global, async_xdb):
-    assert async_xdb.ureg is ureg_custom_global
+def test_ureg_motor_global(custom_ureg_global, async_xdb):
+    assert async_xdb.ureg is custom_ureg_global
 
 
 @requires_pint
@@ -166,17 +182,17 @@ def test_db_contents(ureg, sync_xdb):
 
 
 @requires_pint
-def test_custom_units(ureg, ureg_custom, sync_xdb):
+def test_custom_units(ureg, custom_ureg, sync_xdb):
     """dask _meta is a np.ndarray, but dask payload is a Quantity"""
     import pint
 
-    a = xarray.DataArray(ureg_custom.Quantity([1], "test_unit"))
+    a = xarray.DataArray(custom_ureg.Quantity([1], "test_unit"))
     assert str(a.data.units) == "test_unit"
 
     sync_xdb_custom = XarrayMongoDB(
         sync_xdb.meta.database,
         collection=sync_xdb.meta.name.split(".")[0],
-        ureg=ureg_custom,
+        ureg=custom_ureg,
         embed_threshold_bytes=0,
     )
 
@@ -189,7 +205,7 @@ def test_custom_units(ureg, ureg_custom, sync_xdb):
     with pytest.raises(pint.UndefinedUnitError):
         sync_xdb.get(_id)
 
-    pint.set_application_registry(ureg_custom)
+    pint.set_application_registry(custom_ureg)
     try:
         c = sync_xdb.get(_id)
         assert str(c.data.units) == "test_unit"

@@ -4,7 +4,9 @@ channels:
   - defaults
 dependencies:
   - python=3.9
-  - black
+  # FIXME https://github.com/psf/black/issues/1632
+  #       Docstrings reformatted to be too long
+  - black=19
   - flake8
   - isort
   - mypy

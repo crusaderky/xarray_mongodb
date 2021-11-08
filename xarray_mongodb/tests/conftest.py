@@ -23,7 +23,7 @@ def sync_xdb(sync_db):
 
 @pytest.fixture(scope="function")
 def event_loop():
-    """pytest-asyncio by default creates a new event loop or every new coroutine. This
+    """pytest-asyncio by default creates a new event loop for every new coroutine. This
     happens *after* the fixtures are applied, which causes the AsyncIOMotorClient to be
     attached to the wrong event loop
     """

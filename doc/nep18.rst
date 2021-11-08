@@ -118,14 +118,7 @@ bottom the data is always stored by :class:`numpy.ndarray`.
 
 Legacy support
 --------------
-xarray_mongodb has to cope with a few caveats with legacy versions of its dependencies:
-
-- It requires numpy >= 1.15; however NEP18 was first introduced in v1.16 and
-  consolidated in v1.17.
-- It requires dask >= 1.2; however the ``da.Array._meta`` property, which exposes
-  wrapped non-numpy objects, was not added until v2.0.
-
-Hence, there is a set of minimum required versions when pint and sparse are not
+There is a set of minimum required versions when pint and sparse are not
 involved, and a different set of much more recent ones when they are.
 
 See also: :ref:`mindeps_policy`.

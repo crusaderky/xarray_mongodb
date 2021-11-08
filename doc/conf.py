@@ -288,7 +288,7 @@ intersphinx_mapping = {
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "pint": ("https://pint.readthedocs.io/en/latest/", None),
-    "pymongo": ("https://api.mongodb.com/python/current/", None),
+    "pymongo": ("https://pymongo.readthedocs.io/en/stable/", None),
     "sparse": ("https://sparse.pydata.org/en/latest/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
 }

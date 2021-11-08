@@ -10,7 +10,7 @@ MongoDB. Its design is heavily influenced by
 Current Features
 ----------------
 - Synchronous operations with
-  `PyMongo <https://api.mongodb.com/python/current/>`_
+  `PyMongo <https://pymongo.readthedocs.io/en/stable/>`_
 - asyncio support with `Motor <https://motor.readthedocs.io/>`_
 - Units annotations with `Pint <https://pint.readthedocs.io/>`_
 - Delayed put/get of xarray objects backed by `dask <https://dask.org/>`_.

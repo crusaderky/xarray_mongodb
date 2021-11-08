@@ -99,7 +99,11 @@ class XarrayMongoDBCommon:
 
         import pint
 
-        return pint.get_application_registry()
+        application_registry = pint.get_application_registry()
+        try:
+            return application_registry.get()
+        except AttributeError:
+            return application_registry
 
     @ureg.setter
     def ureg(self, value: Optional[UnitRegistry]) -> None:
@@ -349,7 +353,7 @@ class XarrayMongoDBCommon:
 
                 if "units" in var_meta:
                     # wrap numpy/dask array with pint
-                    array = self.ureg.Quantity(array, var_meta["units"])
+                    array = self.ureg.Quantity(array, var_meta["units"])  # type: ignore
 
                 yield var_name, xarray.Variable(
                     var_meta["dims"], array, attrs=var_meta.get("attrs")

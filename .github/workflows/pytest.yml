@@ -19,16 +19,15 @@ jobs:
           - windows
         name:
           - git-tip
-          - py36
-          - py36-bare-minimum
-          - py36-min-all-deps
-          - py36-min-nep18
+          - py37-bare-minimum
+          - py37-min-all-deps
+          - py37-min-nep18
           - py37
           - py38
           - py39
-        mongodb-version: ['3.6', '4.4']
+        mongodb-version: ['4.4', '5.0']
         exclude:
-          # MongoDB is hardcoded to 3.6.17 in the Powershell install script
+          # MongoDB is hardcoded to 4.4.10 in the Powershell install script
           - os: windows
             mongodb-version: '4.4'
 
@@ -54,11 +53,11 @@ jobs:
         shell: pwsh
         run: pwsh ci/install_mongodb.ps1
 
-      - name: Require motor >= 2.1 on Windows
+      - name: Require motor >= 2.3.1 on Windows
         if:
           matrix.os == 'windows' && (
-            matrix.name == 'py36-min-all-deps'
-            || matrix.name == 'py36-min-nep18'
+            matrix.name == 'py37-min-all-deps'
+            || matrix.name == 'py37-min-nep18'
           )
         shell: bash -l {0}
         run: |
@@ -66,7 +65,7 @@ jobs:
           sed -i $REQ -e '/.*motor.*/d'
           echo '  - pip' >> $REQ
           echo '  - pip:' >> $REQ
-          echo '    - motor >= 2.1' >> $REQ
+          echo '    - motor >= 2.3.1' >> $REQ
           echo $REQ
 
       - name: Setup Conda Environment

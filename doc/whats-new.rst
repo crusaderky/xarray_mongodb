@@ -9,6 +9,17 @@ v0.3.0 (unreleased)
 ===================
 
 
+.. _whats-new.0.2.2:
+
+v0.2.2 (2021-11-05)
+===================
+- Added Support for python 3.9
+- Dropped support for python 3.6
+- Added support for MongoDB 5.0
+- Dropped support for MongoDB 3.6
+- Use Sphinx 3 for documentation
+
+
 .. _whats-new.0.2.1:
 
 v0.2.1 (2021-01-13)

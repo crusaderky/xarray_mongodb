@@ -3,16 +3,13 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.6
-  - dask
-  - motor
-  - numpy
-  - pandas
-  - pint
-  - pymongo
+  - python=3.7
+  - dask=2.24
+  - numpy=1.18
+  - pandas=1.0
+  - pymongo=3.7
   - pytest
   - pytest-asyncio
   - pytest-cov
-  - sparse
-  - toolz
-  - xarray
+  - toolz=0.10
+  - xarray=0.16

@@ -38,14 +38,18 @@ jobs:
         shell: bash -l {0}
         run: flake8
 
+      - name: black version
+        shell: bash -l {0}
+        run: black --version
+
       - name: black
         shell: bash -l {0}
-        run: black --check -t py36 .
+        run: black --check -t py37 -v .
 
       - name: isort
         shell: bash -l {0}
-        run: isort --check --py 36 .
+        run: isort --check --py 37 .
 
       - name: mypy
         shell: bash -l {0}
-        run: mypy --python-version 3.6 .
+        run: mypy --python-version 3.7 --install-types --non-interactive --ignore-missing-imports --exclude 'doc/conf\.py$' .
