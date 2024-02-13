@@ -1,11 +1,13 @@
 """Patch pymongo objects to make them serializable
 """
+from __future__ import annotations
+
 import pymongo
 import pymongo.collection
 import pymongo.database
 
 
-def patch_pymongo() -> None:
+def patch_pymongo():
     pymongo.MongoClient.__init__ = client_init
     pymongo.MongoClient.__getstate__ = client_getstate
     pymongo.MongoClient.__setstate__ = client_setstate

@@ -7,17 +7,24 @@ What's New
 
 v0.3.0 (unreleased)
 ===================
-
-
-.. _whats-new.0.2.2:
-
-v0.2.2 (2021-11-05)
-===================
-- Added Support for python 3.9
-- Dropped support for python 3.6
+- Added support for Python 3.9 to 3.12
 - Added support for MongoDB 5.0
-- Dropped support for MongoDB 3.6
-- Use Sphinx 3 for documentation
+- Added support for recent versions of all dependencies
+- Increased all minimum dependencies:
+
+  ========== ===== =====
+  Dependency 0.2.2 0.3.0
+  ========== ===== =====
+  Python     3.6   3.9
+  MongoDB    3.6   4.4
+  numpy      1.15  1.19
+  pandas     0.24  1.1
+  xarray     0.13  0.16
+  pymongo    3.7   3.11
+  motor      2.0   2.3
+  pint       0.10  0.18
+  sparse     0.9   0.9
+  ========== ===== =====
 
 
 .. _whats-new.0.2.1:

@@ -29,9 +29,9 @@ def _import_or_skip(*args):
             has_this = False
         else:
             try:
-                version = mod.__version__  # type: ignore
+                version = mod.__version__
             except AttributeError:
-                version = mod.version  # type: ignore
+                version = mod.version
 
             has_this = parse(version) >= parse(minversion)
 
@@ -45,16 +45,12 @@ def _import_or_skip(*args):
     return has, func
 
 
-has_motor, requires_motor = _import_or_skip(("motor", "2.0"))
-has_pint, requires_pint = _import_or_skip(
-    ("pint", "0.10"), ("numpy", "1.18"), ("dask", "2.24"), ("xarray", "0.13"),
-)
-has_sparse, requires_sparse = _import_or_skip(
-    ("sparse", "0.8"), ("numpy", "1.18"), ("dask", "2.24"), ("xarray", "0.13"),
-)
+has_motor, requires_motor = _import_or_skip(("motor", "2.3"))
+has_pint, requires_pint = _import_or_skip(("pint", "0.18"))
+has_sparse, requires_sparse = _import_or_skip(("sparse", "0.9"))
 
 
-def assert_chunks_index(indices: list):
+def assert_chunks_index(indices: list) -> None:
     """Test that the custom index on the xarray.chunks collection is well-formed"""
     keys = [dict(idx["key"]) for idx in indices]
     assert keys == [{"_id": 1}, {"meta_id": 1, "name": 1, "chunk": 1}]

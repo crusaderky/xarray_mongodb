@@ -3,9 +3,8 @@ import pytest
 import xarray
 
 from xarray_mongodb import DocumentNotFoundError, XarrayMongoDB
-
-from . import assert_chunks_index
-from .data import (
+from xarray_mongodb.tests import assert_chunks_index
+from xarray_mongodb.tests.data import (
     da,
     ds,
     expect_da_chunks,
@@ -47,7 +46,7 @@ def test_index_on_get(sync_xdb):
 
 
 @parametrize_roundtrip
-@pytest.mark.parametrize("chunk_size_bytes", [16, 2 ** 20])
+@pytest.mark.parametrize("chunk_size_bytes", [16, 2**20])
 def test_roundtrip(
     sync_xdb, compute, load, chunks, embed_threshold_bytes, chunk_size_bytes
 ):

@@ -2,38 +2,66 @@ name: Test
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
     branches: ['*']
 
+defaults:
+  run:
+    shell: bash -l {0}
+
 jobs:
   build:
-    name: ${{ matrix.name }} / MongoDB ${{ matrix.mongodb-version }} / ${{ matrix.os }}
+    name: ${{ matrix.os }} ${{ matrix.name }} py${{ matrix.python-version }} / MongoDB ${{ matrix.mongodb-version }}
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu
-          - macos
-          - windows
-        name:
-          - git-tip
-          - py37-bare-minimum
-          - py37-min-all-deps
-          - py37-min-nep18
-          - py37
-          - py38
-          - py39
+        os: [ubuntu, macos, windows]
+        name: [latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         mongodb-version: ['4.4', '5.0']
         exclude:
           # MongoDB is hardcoded to 4.4.10 in the Powershell install script
           - os: windows
+            mongodb-version: '5.0'
+          - os: macos
+            python-version: '3.10'
+          - os: macos
+            python-version: '3.11'
+          - os: windows
+            python-version: '3.10'
+          - os: windows
+            python-version: '3.11'
+        include:
+          - name: min-no-optionals
+            os: ubuntu
+            python-version: '3.9'
+            mongodb-version: '4.4'
+          - name: min-no-optionals
+            os: macos
+            python-version: '3.9'
+            mongodb-version: '4.4'
+          - name: min-no-optionals
+            os: windows
+            python-version: '3.9'
+            mongodb-version: '4.4'
+          - name: min-all-deps
+            os: ubuntu
+            python-version: '3.9'
+            mongodb-version: '4.4'
+          - name: min-all-deps
+            os: macos
+            python-version: '3.9'
+            mongodb-version: '4.4'
+          - name: min-all-deps
+            os: windows
+            python-version: '3.9'
             mongodb-version: '4.4'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Start MongoDB on Linux
         if: matrix.os == 'ubuntu'
@@ -56,10 +84,9 @@ jobs:
       - name: Require motor >= 2.3.1 on Windows
         if:
           matrix.os == 'windows' && (
-            matrix.name == 'py37-min-all-deps'
-            || matrix.name == 'py37-min-nep18'
+            matrix.name == 'min-all-deps'
+            || matrix.name == 'min-nep18'
           )
-        shell: bash -l {0}
         run: |
           REQ=ci/requirements-${{ matrix.name }}.yml
           sed -i $REQ -e '/.*motor.*/d'
@@ -69,29 +96,26 @@ jobs:
           echo $REQ
 
       - name: Setup Conda Environment
-        uses: goanpeca/setup-miniconda@v1
-        env:
-          # https://github.blog/changelog/2020-10-01-github-actions-deprecating-set-env-and-add-path-commands/
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          miniconda-version: latest
-          auto-update-conda: true
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
           environment-file: ci/requirements-${{ matrix.name }}.yml
           activate-environment: xarray_mongodb
-          auto-activate-base: false
 
       - name: conda info
-        shell: bash -l {0}
         run: conda info
 
       - name: conda list
-        shell: bash -l {0}
         run: conda list
 
       - name: Install
-        shell: bash -l {0}
         run: python -m pip install --no-deps -e .
 
       - name: pytest
-        shell: bash -l {0}
-        run: py.test xarray_mongodb --cov=xarray_mongodb --cov-report term-missing
+        run: py.test xarray_mongodb --cov=xarray_mongodb --cov-report=xml
+
+      - name: codecov.io
+        uses: codecov/codecov-action@v3

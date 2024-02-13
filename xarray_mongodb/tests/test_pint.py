@@ -1,29 +1,19 @@
+from contextlib import suppress
+
 import dask.array as da
 import numpy as np
 import pytest
 import xarray
 
 from xarray_mongodb import XarrayMongoDB, XarrayMongoDBAsyncIO
-
-from . import requires_motor, requires_pint
+from xarray_mongodb.tests import requires_motor, requires_pint
 
 
 @pytest.fixture
 def ureg():
     import pint
 
-    # Remove try except block after min pint dependency version becomes > 0.18
-    try:
-        # pint.__version__ > 0.18
-        application_registry = pint.application_registry
-    except AttributeError:
-        application_registry = pint._APP_REGISTRY
-
-    try:
-        # pint.__version__ > 0.18
-        return application_registry.get()
-    except AttributeError:
-        return application_registry
+    return pint.application_registry.get()
 
 
 @pytest.fixture
@@ -42,11 +32,9 @@ def custom_ureg_global():
     ureg = pint.UnitRegistry()
     ureg.define("test_unit = 123 kg")
     prev = pint.get_application_registry()
-    try:
+    with suppress(AttributeError):
         # pint.__version__ > 0.18
         prev = prev.get()
-    except AttributeError:
-        pass
     pint.set_application_registry(ureg)
     yield ureg
     pint.set_application_registry(prev)

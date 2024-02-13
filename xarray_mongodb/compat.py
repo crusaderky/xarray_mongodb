@@ -2,9 +2,20 @@
 
 Please read :doc:`nep18`.
 """
-from typing import Any, Callable
+from __future__ import annotations
 
-__all__ = ("COO", "Quantity", "Unit", "UnitRegistry")
+from collections.abc import Callable
+from typing import Any
+
+__all__ = ("has_motor", "COO", "Quantity", "Unit", "UnitRegistry")
+
+
+try:
+    import motor
+
+    has_motor = motor.version_tuple >= (2, 3)
+except ImportError:
+    has_motor = False
 
 
 # sparse imports or dummies
@@ -22,21 +33,19 @@ except ImportError:
 
 # pint imports or dummies
 try:
-    from pint import UnitRegistry
-    from pint.quantity import _Quantity as Quantity
-    from pint.unit import _Unit as Unit
+    from pint import Quantity, Unit, UnitRegistry
 
 except ImportError:
 
     class Unit:  # type: ignore
-        def __init__(self, s):
+        def __init__(self, s: str):
             raise NotImplementedError("STUB")
 
     class Quantity:  # type: ignore
         magnitude: Any
         units: Unit
 
-        def __init__(self, magnitude, units=None):
+        def __init__(self, magnitude: Any, units: str | None = None):
             raise NotImplementedError("STUB")
 
     class UnitRegistry:  # type: ignore

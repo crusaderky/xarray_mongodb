@@ -1,14 +1,11 @@
 name: xarray_mongodb-docs
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  # This must match ../readthedocs.yml
-  # Python 3.9 not yet supported by readthedocs CI
-  # See https://docs.readthedocs.io/en/latest/config-file/v2.html#build-image
-  - python=3.8
+  - python=3.12
   - sphinx
   - sphinx_rtd_theme
+
   - dask
   - motor
   - pint

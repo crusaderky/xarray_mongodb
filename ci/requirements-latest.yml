@@ -1,18 +1,21 @@
 name: xarray_mongodb
 channels:
   - conda-forge
-  - defaults
 dependencies:
-  - python=3.7
+  # Core dependencies
   - dask
-  - motor
   - numpy
   - pandas
-  - pint
   - pymongo
+  - toolz
+  - xarray
+
+  # Optional dependencies
+  - motor
+  - pint
+  - sparse
+
+  # Test tools
   - pytest
   - pytest-asyncio
   - pytest-cov
-  - sparse
-  - toolz
-  - xarray

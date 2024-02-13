@@ -115,10 +115,3 @@ bottom the data is always stored by :class:`numpy.ndarray`.
    array([1.1])
    >>> a.data.magnitude.compute().coords
    array([[2]])
-
-Legacy support
---------------
-There is a set of minimum required versions when pint and sparse are not
-involved, and a different set of much more recent ones when they are.
-
-See also: :ref:`mindeps_policy`.
