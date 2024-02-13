@@ -3,7 +3,11 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12
-  - sphinx
+  # FIXME Sphinx >=6 crashes. No idea what's causing it.
+  # Sphinx 5 raises a warning:
+  # extlinks: Sphinx-6.0 will require a caption string to contain exactly one '%s' and
+  # all other '%' need to be escaped as '%%'.
+  - sphinx=5
   - sphinx_rtd_theme
 
   - dask

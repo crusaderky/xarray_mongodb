@@ -298,12 +298,12 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "dask": ("http://docs.dask.org/en/latest/", None),
+    "dask": ("https://docs.dask.org/en/latest", None),
     "motor": ("https://motor.readthedocs.io/en/stable/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "pint": ("https://pint.readthedocs.io/en/latest/", None),
     "pymongo": ("https://pymongo.readthedocs.io/en/stable/", None),
     "sparse": ("https://sparse.pydata.org/en/latest/", None),
-    "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
 }
