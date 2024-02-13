@@ -1,31 +1,45 @@
 """asyncio driver based on Motor
 """
+from __future__ import annotations
+
 import asyncio
+from collections.abc import Awaitable, Callable, Collection
 from functools import wraps
-from typing import Callable, Collection, Optional, Tuple, Union
+from typing import TYPE_CHECKING, TypeVar
 
 import bson
 import motor.motor_asyncio
 import xarray
 from dask.delayed import Delayed
 
-from .common import (
+from xarray_mongodb.common import (
     CHUNK_SIZE_BYTES_DEFAULT,
     CHUNKS_INDEX,
     EMBED_THRESHOLD_BYTES_DEFAULT,
     XarrayMongoDBCommon,
 )
-from .errors import DocumentNotFoundError
-from .nep18 import UnitRegistry
+from xarray_mongodb.compat import UnitRegistry
+from xarray_mongodb.errors import DocumentNotFoundError
+
+if TYPE_CHECKING:
+    # TODO import from typing (requires Python >=3.10)
+    from typing_extensions import Concatenate, ParamSpec
+
+    P = ParamSpec("P")
+    T = TypeVar("T")
 
 
-def _create_index(func: Callable) -> Callable:
+def _create_index(
+    func: Callable[Concatenate[XarrayMongoDBAsyncIO, P], Awaitable[T]]
+) -> Callable[Concatenate[XarrayMongoDBAsyncIO, P], Awaitable[T]]:
     """Asynchronous decorator function that create the index on the 'chunk' collection
     on the first get() or put()
     """
 
     @wraps(func)
-    async def wrapper(self: "XarrayMongoDBAsyncIO", *args, **kwargs):
+    async def wrapper(
+        self: XarrayMongoDBAsyncIO, *args: P.args, **kwargs: P.kwargs
+    ) -> T:
         if not self._has_index:
             idx_fut = asyncio.ensure_future(
                 self.chunks.create_index(CHUNKS_INDEX, background=True)
@@ -58,19 +72,19 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
     # This method is just for overriding the typing annotation of database
     def __init__(
         self,
-        database: motor.motor_asyncio.AsyncIOMotorDatabase,
+        database: motor.motor_asyncio.AsyncIOMotorDatabase,  # type: ignore[valid-type]
         collection: str = "xarray",
         *,
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
         embed_threshold_bytes: int = EMBED_THRESHOLD_BYTES_DEFAULT,
-        ureg: UnitRegistry = None,
+        ureg: UnitRegistry | None = None,
     ):
         XarrayMongoDBCommon.__init__(**locals())
 
     @_create_index
     async def put(
-        self, x: Union[xarray.DataArray, xarray.Dataset]
-    ) -> Tuple[bson.ObjectId, Optional[Delayed]]:
+        self, x: xarray.DataArray | xarray.Dataset
+    ) -> tuple[bson.ObjectId, Delayed | None]:
         """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.put`"""
         meta, variables_data = self._dataset_to_meta(x)
         _id = (await self.meta.insert_one(meta)).inserted_id
@@ -81,8 +95,8 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
 
     @_create_index
     async def get(
-        self, _id: bson.ObjectId, load: Union[bool, None, Collection[str]] = None
-    ) -> Union[xarray.DataArray, xarray.Dataset]:
+        self, _id: bson.ObjectId, load: bool | Collection[str] | None = None
+    ) -> xarray.DataArray | xarray.Dataset:
         """Asynchronous variant of :meth:`xarray_mongodb.XarrayMongoDB.get`"""
         meta = await self.meta.find_one({"_id": _id})
         if not meta:

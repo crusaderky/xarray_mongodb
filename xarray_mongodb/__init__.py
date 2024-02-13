@@ -1,34 +1,29 @@
-import pkg_resources
+import importlib.metadata
+from typing import Any
 
-from . import patch_pymongo
-from .errors import DocumentNotFoundError  # noqa: F401
-from .sync import XarrayMongoDB  # noqa: F401
+from xarray_mongodb import patch_pymongo
+from xarray_mongodb.compat import has_motor
+from xarray_mongodb.errors import DocumentNotFoundError
+from xarray_mongodb.sync import XarrayMongoDB
 
 try:
-    __version__ = pkg_resources.get_distribution("xarray_mongodb").version
-except Exception:  # pragma: no cover
-    # No installed copy
-    __version__ = "999"
+    __version__ = importlib.metadata.version("xarray_mongodb")
+except importlib.metadata.PackageNotFoundError:  # pragma: nocover
+    # Local copy, not installed with pip
+    __version__ = "9999"
+
 
 # Make PyMongo objects serializable
 patch_pymongo.patch_pymongo()
 del patch_pymongo
 
-
-try:
-    import motor
-
-    has_motor = motor.version_tuple >= (2, 0)
-except ImportError:
-    has_motor = False
-
 if has_motor:
-    from .asyncio import XarrayMongoDBAsyncIO  # noqa: F401
+    from xarray_mongodb.asyncio import XarrayMongoDBAsyncIO
 else:
 
     class XarrayMongoDBAsyncIO:  # type: ignore
-        def __new__(cls, *args, **kwargs):
-            raise ImportError("XarrayMongoDBAsyncIO requires motor >=2.0")
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+            raise ImportError("XarrayMongoDBAsyncIO requires motor >=2.3")
 
 
 del has_motor

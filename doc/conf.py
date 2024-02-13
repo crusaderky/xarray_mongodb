@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
-#
+from __future__ import annotations
+
 # documentation build configuration file, created by
 # sphinx-quickstart on Thu Feb  6 18:57:54 2014.
 #
@@ -12,14 +12,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 import datetime
+import os
 import sys
 
 import xarray_mongodb
 
-allowed_failures = set()
-
 print("python exec:", sys.executable)
 print("sys.path:", sys.path)
+print("xarray_mongodb version: ", xarray_mongodb.__version__)
 
 # -- General configuration ------------------------------------------------
 
@@ -38,8 +38,8 @@ extensions = [
 ]
 
 extlinks = {
-    "issue": ("https://github.com/AmphoraInc/xarray_mongodb/issues/%s", "#"),
-    "pull": ("https://github.com/AmphoraInc/xarray_mongodb/pull/%s", "#"),
+    "issue": ("https://github.com/crusaderky/xarray_mongodb/issues/%s", "#"),
+    "pull": ("https://github.com/crusaderky/xarray_mongodb/pull/%s", "#"),
 }
 
 autosummary_generate = True
@@ -58,14 +58,14 @@ master_doc = "index"
 
 # General information about the project.
 project = "xarray_mongodb"
-copyright = "2019-%s, Amphora, Inc." % datetime.datetime.now().year
+copyright = "2019-%s, xarray_mongodb Developers" % datetime.datetime.now().year
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = xarray_mongodb.__version__
+version = xarray_mongodb.__version__.split("+")[0]
 # The full version, including alpha/beta/rc tags.
 release = xarray_mongodb.__version__
 
@@ -143,6 +143,15 @@ html_theme_options = {"logo_only": True}
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+# Sometimes the savefig directory doesn't exist and needs to be created
+# https://github.com/ipython/ipython/issues/8733
+# becomes obsolete when we can pin ipython>=5.2; see doc/environment.yml
+ipython_savefig_dir = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "_build", "html", "_static"
+)
+if not os.path.exists(ipython_savefig_dir):
+    os.makedirs(ipython_savefig_dir)
+
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
@@ -195,13 +204,13 @@ htmlhelp_basename = "xarray_mongodbdoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {
+latex_elements: dict[str, str] = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -212,7 +221,7 @@ latex_documents = [
         "index",
         "xarray_mongodb.tex",
         "xarray_mongodb Documentation",
-        "Amphora, Inc.",
+        "xarray_mongodb Developers",
         "manual",
     )
 ]
@@ -243,7 +252,13 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ("index", "xarray_mongodb", "xarray_mongodb Documentation", ["Amphora, Inc."], 1)
+    (
+        "index",
+        "xarray_mongodb",
+        "xarray_mongodb Documentation",
+        ["xarray_mongodb Developers"],
+        1,
+    )
 ]
 
 # If true, show URL addresses after external links.
@@ -260,7 +275,7 @@ texinfo_documents = [
         "index",
         "xarray_mongodb",
         "xarray_mongodb Documentation",
-        "Amphora, Inc.",
+        "xarray_mongodb Developers",
         "xarray_mongodb",
         "Store xarray objects on MongoDB",
         "Miscellaneous",
@@ -283,15 +298,12 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "dask": ("http://docs.dask.org/en/latest/", None),
+    "dask": ("https://docs.dask.org/en/latest", None),
     "motor": ("https://motor.readthedocs.io/en/stable/", None),
-    "numpy": ("https://docs.scipy.org/doc/numpy/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "pint": ("https://pint.readthedocs.io/en/latest/", None),
     "pymongo": ("https://pymongo.readthedocs.io/en/stable/", None),
     "sparse": ("https://sparse.pydata.org/en/latest/", None),
-    "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
 }
-
-# Work around many incompatibilities with intersphinx
-autodoc_typehints = "none"

@@ -1,20 +1,22 @@
 """synchronous driver based on PyMongo
 """
-from typing import Collection, Optional, Tuple, Union
+from __future__ import annotations
+
+from collections.abc import Collection
 
 import bson
 import pymongo.database
 import xarray
 from dask.delayed import Delayed
 
-from .common import (
+from xarray_mongodb.common import (
     CHUNK_SIZE_BYTES_DEFAULT,
     CHUNKS_INDEX,
     EMBED_THRESHOLD_BYTES_DEFAULT,
     XarrayMongoDBCommon,
 )
-from .errors import DocumentNotFoundError
-from .nep18 import UnitRegistry
+from xarray_mongodb.compat import UnitRegistry
+from xarray_mongodb.errors import DocumentNotFoundError
 
 
 class XarrayMongoDB(XarrayMongoDBCommon):
@@ -57,7 +59,7 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         *,
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
         embed_threshold_bytes: int = EMBED_THRESHOLD_BYTES_DEFAULT,
-        ureg: UnitRegistry = None,
+        ureg: UnitRegistry | None = None,
     ):
         XarrayMongoDBCommon.__init__(**locals())
 
@@ -70,8 +72,8 @@ class XarrayMongoDB(XarrayMongoDBCommon):
             self._has_index = True
 
     def put(
-        self, x: Union[xarray.DataArray, xarray.Dataset]
-    ) -> Tuple[bson.ObjectId, Optional[Delayed]]:
+        self, x: xarray.DataArray | xarray.Dataset
+    ) -> tuple[bson.ObjectId, Delayed | None]:
         """Write an xarray object to MongoDB. Variables that are backed by dask are not
         computed; instead their insertion in the database is delayed. All other
         variables are immediately inserted.
@@ -104,8 +106,8 @@ class XarrayMongoDB(XarrayMongoDBCommon):
         return _id, delayed
 
     def get(
-        self, _id: bson.ObjectId, load: Union[bool, None, Collection[str]] = None
-    ) -> Union[xarray.DataArray, xarray.Dataset]:
+        self, _id: bson.ObjectId, load: bool | Collection[str] | None = None
+    ) -> xarray.DataArray | xarray.Dataset:
         """Read an xarray object back from MongoDB
 
         :param :class:`~bson.objectid.ObjectId` _id:

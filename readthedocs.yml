@@ -1,6 +1,0 @@
-conda:
-    file: ci/requirements-docs.yml
-python:
-   # This must match with ci/requirements-docs.yml
-   version: 3.8
-   setup_py_install: true

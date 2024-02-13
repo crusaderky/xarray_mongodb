@@ -1,10 +1,9 @@
-![Amphora Logo](/doc/_static/amphora.png)
-
 xarray_mongodb
 ==============
-[![doc-badge](https://github.com/AmphoraInc/xarray_mongodb/workflows/Documentation/badge.svg)](https://github.com/AmphoraInc/xarray_mongodb/actions)
-[![lint-badge](https://github.com/AmphoraInc/xarray_mongodb/workflows/Lint/badge.svg)](https://github.com/AmphoraInc/xarray_mongodb/actions)
-[![pytest-badge](https://github.com/AmphoraInc/xarray_mongodb/workflows/Test%20latest/badge.svg)](https://github.com/AmphoraInc/xarray_mongodb/actions)
+[![doc-badge](https://github.com/crusaderky/xarray_mongodb/actions/workflows/docs.yml/badge.svg)](https://github.com/crusaderky/xarray_mongodb/actions)
+[![pre-commit-badge](https://github.com/crusaderky/xarray_mongodb/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/crusaderky/xarray_mongodb/actions)
+[![pytest-badge](https://github.com/crusaderky/xarray_mongodb/actions/workflows/pytest.yml/badge.svg)](https://github.com/crusaderky/xarray_mongodb/actions)
+[![codecov-badge](https://codecov.io/gh/crusaderky/xarray_mongodb/branch/main/graph/badge.svg)](https://codecov.io/gh/crusaderky/xarray_mongodb/branch/main)
 
 Read the full documentation at https://xarray-mongodb.readthedocs.io/en/latest/
 

@@ -1,0 +1,131 @@
+[project]
+name = "xarray_mongodb"
+authors = [{name = "Guido Imperiale", email = "crusaderky@gmail.com"}]
+license = {text = "Apache"}
+description = "Store xarray objects on MongoDB"
+keywords = ["mongodb", "xarray", "dask", "distributed", "pint", "sparse"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "numpy >= 1.19",
+    "pandas >= 1.1",
+    "dask >= 2.24",
+    "xarray >= 0.16",
+    "pymongo >= 3.11",
+]
+dynamic = ["version"]
+
+[project.readme]
+text = "Store xarray objects on MongoDB"
+content-type = "text/x-rst"
+
+[project.urls]
+Homepage = "https://github.com/crusaderky/xarray_mongodb"
+
+[project.optional-dependencies]
+asyncio = ["motor >= 2.3"]
+pint = ["pint >= 0.18"]
+sparse = ["sparse >= 0.9"]
+testing = ["pytest", "pytest-asyncio"]
+complete = [
+    "motor >= 2.3",
+    "pint >= 0.18",
+    "sparse >= 0.9",
+]
+
+[tool.setuptools]
+packages = ["xarray_mongodb"]
+zip-safe = false # https://mypy.readthedocs.io/en/latest/installed_packages.html
+include-package-data = true
+
+[tool.setuptools_scm]
+# Use hardcoded version when .git has been removed and this is not a package created
+# by sdist. This is the case e.g. of a remote deployment with PyCharm.
+fallback_version = "9999"
+
+[tool.setuptools.package-data]
+xarray_mongodb = ["py.typed"]
+
+[build-system]
+requires = [
+    "setuptools>=66",
+    "setuptools_scm[toml]",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config -v -r sxfE --color=yes"
+xfail_strict = true
+python_files = ["test_*.py"]
+testpaths = ["xarray_mongodb/tests"]
+asyncio_mode = "auto"
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: nocover",
+    "pragma: no cover",
+    "TYPE_CHECKING",
+    "except ImportError",
+    "@overload",
+    '@(abc\.)?abstractmethod',
+]
+
+[tool.ruff]
+builtins = ["ellipsis"]
+exclude = [".eggs"]
+target-version = "py39"
+
+[tool.ruff.lint]
+ignore = [
+  "E402",  # module level import not at top of file
+  "SIM108",  # use ternary operator instead of if-else block
+]
+select = [
+  "F",    # Pyflakes
+  "B",    # flake8-bugbear
+  "C4",   # flake8-comprehensions
+  "ISC",  # flake8-implicit-str-concat
+  "SIM",  # flake8-simplify
+  "E",    # Pycodestyle
+  "W",    # Pycodestyle
+  "I",    # isort
+  "N",    # pep8-naming
+  "UP",   # Pyupgrade
+  "RUF",  # unused-noqa
+  "EXE001",  #  Shebang is present but file is not executable
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["xarray_mongodb"]
+
+[tool.mypy]
+allow_incomplete_defs = false
+allow_untyped_decorators = false
+allow_untyped_defs = false
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["*.tests.*"]
+allow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["xarray_mongodb.patch_pymongo"]
+allow_untyped_defs = true

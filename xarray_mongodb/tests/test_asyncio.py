@@ -3,13 +3,12 @@ import pytest
 import xarray
 
 from xarray_mongodb import DocumentNotFoundError, XarrayMongoDBAsyncIO
-
-from . import assert_chunks_index, requires_motor
-from .data import ds, expect_meta_minimal, parametrize_roundtrip
+from xarray_mongodb.tests import assert_chunks_index, requires_motor
+from xarray_mongodb.tests.data import ds, expect_meta_minimal, parametrize_roundtrip
 
 
 @requires_motor
-def test_init(async_db):
+async def test_init(async_db):
     xdb = XarrayMongoDBAsyncIO(
         async_db, "foo", chunk_size_bytes=123, embed_threshold_bytes=456
     )
@@ -22,7 +21,6 @@ def test_init(async_db):
 
 
 @requires_motor
-@pytest.mark.asyncio
 async def test_index_on_put(async_xdb):
     indices = await async_xdb.chunks.list_indexes().to_list(None)
     assert not indices
@@ -32,7 +30,6 @@ async def test_index_on_put(async_xdb):
 
 
 @requires_motor
-@pytest.mark.asyncio
 async def test_index_on_get(async_xdb):
     indices = await async_xdb.chunks.list_indexes().to_list(None)
     assert not indices
@@ -47,11 +44,15 @@ async def test_index_on_get(async_xdb):
 
 
 @requires_motor
-@pytest.mark.asyncio
 @parametrize_roundtrip
-@pytest.mark.parametrize("chunk_size_bytes", [16, 2 ** 20])
+@pytest.mark.parametrize("chunk_size_bytes", [16, 2**20])
 async def test_roundtrip(
-    async_xdb, compute, load, chunks, embed_threshold_bytes, chunk_size_bytes,
+    async_xdb,
+    compute,
+    load,
+    chunks,
+    embed_threshold_bytes,
+    chunk_size_bytes,
 ):
     async_xdb.chunk_size_bytes = chunk_size_bytes
     async_xdb.embed_threshold_bytes = embed_threshold_bytes
@@ -70,7 +71,6 @@ async def test_roundtrip(
 
 
 @requires_motor
-@pytest.mark.asyncio
 async def test_minimal(async_xdb):
     ds_min = xarray.Dataset()
     _id, _ = await async_xdb.put(ds_min)

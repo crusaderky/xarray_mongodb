@@ -1,6 +1,6 @@
 """Shared test data between test_sync and test_async
 """
-import dask.array as da
+import dask.array
 import numpy
 import pytest
 import xarray
@@ -9,7 +9,7 @@ ds = xarray.Dataset(
     coords={"x": (("x",), [1, 2]), "x2": (("x",), [3, 4]), "x3": (("x",), [5, 6])},
     data_vars={
         "d": (("x", "y"), [[10, 20], [30, 40]]),
-        "s": da.from_array(1.0, chunks=()),
+        "s": dask.array.from_array(1.0, chunks=()),
     },
     attrs={"foo": "bar"},
 )
@@ -34,7 +34,7 @@ parametrize_roundtrip = pytest.mark.parametrize(
         (
             False,
             None,
-            2 ** 20,
+            2**20,
             {"x": None, "x2": None, "x3": ((1, 1),), "d": ((1, 1), (2,)), "s": ()},
         ),
         (
@@ -46,7 +46,7 @@ parametrize_roundtrip = pytest.mark.parametrize(
         (
             True,
             False,
-            2 ** 20,
+            2**20,
             {"x": None, "x2": None, "x3": None, "d": None, "s": None},
         ),
         (

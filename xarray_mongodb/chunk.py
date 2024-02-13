@@ -3,13 +3,13 @@
 - loading/writing a numpy.ndarray on MongoDB
 - converting between MongoDB documnents and numpy.ndarray
 """
-from typing import List, Optional, Tuple
+from __future__ import annotations
 
 import numpy as np
 import pymongo
 from bson import ObjectId
 
-from .errors import DocumentNotFoundError
+from xarray_mongodb.errors import DocumentNotFoundError
 
 
 def mongodb_put_array(
@@ -36,7 +36,7 @@ def mongodb_get_array(
     coll: pymongo.collection.Collection,
     meta_id: ObjectId,
     name: str,
-    chunk: Optional[Tuple[int, ...]],
+    chunk: tuple[int, ...] | None,
 ) -> np.ndarray:
     """Load all MongoDB documents making up a dask chunk and assemble them into
     an array
@@ -50,9 +50,9 @@ def array_to_docs(
     array: np.ndarray,
     meta_id: ObjectId,
     name: str,
-    chunk: Optional[Tuple[int, ...]],
+    chunk: tuple[int, ...] | None,
     chunk_size_bytes: int,
-) -> List[dict]:
+) -> list[dict]:
     """Convert a numpy array to a list of MongoDB documents ready to be inserted into
     the 'chunks' collection
     """
@@ -77,7 +77,7 @@ def array_to_docs(
     ]
 
 
-def docs_to_array(docs: List[dict], find_key: dict) -> np.ndarray:
+def docs_to_array(docs: list[dict], find_key: dict) -> np.ndarray:
     """Convert a list of MongoDB documents from the 'chunks' collection into a numpy
     array.
 

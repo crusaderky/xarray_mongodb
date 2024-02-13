@@ -5,11 +5,10 @@ Installation
 
 Required dependencies
 ---------------------
-- Python 3.7 or later
-- MongoDB 3.6 or later
+- Python 3.9 or later
+- MongoDB 4.4 or later
 - `xarray <http://xarray.pydata.org>`_
 - `dask <https://dask.org/>`_
-- `toolz <https://toolz.readthedocs.io/>`_
 - `PyMongo <https://pymongo.readthedocs.io/en/stable/>`_
 
 
@@ -31,19 +30,10 @@ dependencies:
   (`NEP-29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_)
 - **numpy:** 24 months
   (`NEP-29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_)
-- **pandas:** 12 months
-- **pint and sparse:** very latest available versions only, until the technology based
-  on `NEP-18 <https://numpy.org/neps/nep-0018-array-function-protocol.html>`_ will have
-  matured. This extends to all other libraries as well when one wants to use pint or
-  sparse.
-- **all other libraries:** 6 months
+- **all other libraries:** 12 months
 
-You can see the actual minimum supported and tested versions:
-
-- `For using pint and/or sparse
-  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py37-min-nep18.yml>`_
-- `For everything else
-  <https://github.com/AmphoraInc/xarray_mongodb/blob/master/ci/requirements-py37-min-all-deps.yml>`_
+You can see the actual minimum supported and tested versions here:
+`<https://github.com/crusaderky/xarray_mongodb/blob/main/ci/requirements-min-all-deps.yml>`_
 
 
 .. _build_sphinx:
@@ -58,7 +48,6 @@ To build the Sphinx documentation:
 
      conda env create -n xarray_mongodb_docs --file ci/requirements-docs.yml
      conda activate xarray_mongodb_docs
-     export PYTHONPATH=$PWD
      sphinx-build -n -j auto -b html -d build/doctrees doc build/html
 
 
@@ -73,10 +62,6 @@ To run the test suite:
 3. Move to the root directory of this project
 4. Execute::
 
-     conda env create -n xarray_mongodb_py37 --file ci/requirements-py37.yml
-     conda activate xarray_mongodb_py37
-     export PYTHONPATH=$PWD
+     conda env create -n xarray_mongodb --file ci/requirements-latest.yml
+     conda activate xarray_mongodb
      py.test
-
-Replace py37 with any of the environments available in the :file:`ci`
-directory.
