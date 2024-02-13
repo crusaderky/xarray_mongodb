@@ -13,87 +13,86 @@ defaults:
 jobs:
   build:
     name: ${{ matrix.os }} ${{ matrix.name }} py${{ matrix.python-version }} / MongoDB ${{ matrix.mongodb-version }}
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [ubuntu-latest]
         name: [latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
-        mongodb-version: ['4.4', '5.0']
-        exclude:
-          # MongoDB is hardcoded to 4.4.10 in the Powershell install script
-          - os: windows
-            mongodb-version: '5.0'
-          - os: macos
-            python-version: '3.10'
-          - os: macos
-            python-version: '3.11'
-          - os: windows
-            python-version: '3.10'
-          - os: windows
-            python-version: '3.11'
+        mongodb-version: ['3.6', '7.0']
+
         include:
+          # Test latest on MacOSX
+          - name: latest
+            os: macos-14
+            python-version: '3.9'
+            mongodb-version: '4.4'
+          - name: latest
+            os: macos-14
+            python-version: '3.12'
+            mongodb-version: '7.0'
+
+          # Test latest on Windows
+          # (mongodb version is hardcoded in install_mongodb.ps1)
+          - name: latest
+            os: windows-latest
+            python-version: '3.9'
+            mongodb-version: '3.6'
+          - name: latest
+            os: windows-latest
+            python-version: '3.12'
+            mongodb-version: '3.6'
+
+          # Test minimum dependencies, no optionals
           - name: min-no-optionals
-            os: ubuntu
+            os: ubuntu-latest
+            python-version: '3.9'
+            mongodb-version: '3.6'
+          - name: min-no-optionals
+            os: macos-14
             python-version: '3.9'
             mongodb-version: '4.4'
           - name: min-no-optionals
-            os: macos
+            os: windows-latest
             python-version: '3.9'
-            mongodb-version: '4.4'
-          - name: min-no-optionals
-            os: windows
+            mongodb-version: '3.6'
+
+          # Test minimum dependencies, all optionals
+          - name: min-all-deps
+            os: ubuntu-latest
+            python-version: '3.9'
+            mongodb-version: '3.6'
+          - name: min-all-deps
+            os: macos-14
             python-version: '3.9'
             mongodb-version: '4.4'
           - name: min-all-deps
-            os: ubuntu
+            os: windows-latest
             python-version: '3.9'
-            mongodb-version: '4.4'
-          - name: min-all-deps
-            os: macos
-            python-version: '3.9'
-            mongodb-version: '4.4'
-          - name: min-all-deps
-            os: windows
-            python-version: '3.9'
-            mongodb-version: '4.4'
+            mongodb-version: '3.6'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Start MongoDB on Linux
-        if: matrix.os == 'ubuntu'
+        if: matrix.os == 'ubuntu-latest'
         uses: supercharge/mongodb-github-action@1.3.0
         with:
           mongodb-version: ${{ matrix.mongodb-version }}
 
       - name: Start MongoDB on MacOS
-        if: matrix.os == 'macos'
+        if: matrix.os == 'macos-14'
         run: |
           brew tap mongodb/brew
           brew install mongodb-community@${{ matrix.mongodb-version }}
           brew services start mongodb-community@${{ matrix.mongodb-version }}
 
       - name: Start MongoDB on Windows
-        if: matrix.os == 'windows'
+        if: matrix.os == 'windows-latest'
         shell: pwsh
         run: pwsh ci/install_mongodb.ps1
-
-      - name: Require motor >= 2.3.1 on Windows
-        if:
-          matrix.os == 'windows' && (
-            matrix.name == 'min-all-deps'
-            || matrix.name == 'min-nep18'
-          )
-        run: |
-          REQ=ci/requirements-${{ matrix.name }}.yml
-          sed -i $REQ -e '/.*motor.*/d'
-          echo '  - pip' >> $REQ
-          echo '  - pip:' >> $REQ
-          echo '    - motor >= 2.3.1' >> $REQ
-          echo $REQ
 
       - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v3
@@ -110,6 +109,9 @@ jobs:
 
       - name: conda list
         run: conda list
+
+      - name: Test MongoDB service
+        run: python ci/mongo_smoke_test.py
 
       - name: Install
         run: python -m pip install --no-deps -e .

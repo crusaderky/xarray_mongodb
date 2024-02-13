@@ -13,10 +13,10 @@ v0.3.0 (unreleased)
 - Increased all minimum dependencies:
 
   ========== ===== =====
-  Dependency 0.2.2 0.3.0
+  Dependency 0.2.1 0.3.0
   ========== ===== =====
+  MongoDB    3.6   3.6
   Python     3.6   3.9
-  MongoDB    3.6   4.4
   numpy      1.15  1.19
   pandas     0.24  1.1
   xarray     0.13  0.16

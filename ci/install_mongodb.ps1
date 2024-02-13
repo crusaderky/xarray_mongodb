@@ -3,9 +3,9 @@
 #
 $mongoDbPath = "$env:SystemDrive\MongoDB"
 $mongoDbConfigPath = "$mongoDbPath\mongod.cfg"
-$url = "https://fastdl.mongodb.org/windows/mongodb-windows-x86_64-4.4.10.zip"
+$url = "https://fastdl.mongodb.org/win32/mongodb-win32-x86_64-2008plus-ssl-3.6.17.zip"
 $zipFile = "$mongoDbPath\mongo.zip"
-$unzippedFolderContent ="$mongoDbPath\mongodb-win32-x86_64-windows-4.4.10"
+$unzippedFolderContent ="$mongoDbPath\mongodb-win32-x86_64-2008plus-ssl-3.6.17"
 
 Write-Host "Setting up directories..."
 $temp = md $mongoDbPath
@@ -16,6 +16,7 @@ $temp = md "$mongoDbPath\data\db"
 Write-Host "Setting up mongod.cfg..."
 [System.IO.File]::AppendAllText("$mongoDbConfigPath", "dbpath=$mongoDbPath\data\db`r`n")
 [System.IO.File]::AppendAllText("$mongoDbConfigPath", "logpath=$mongoDbPath\log\mongo.log`r`n")
+[System.IO.File]::AppendAllText("$mongoDbConfigPath", "smallfiles=true`r`n")
 
 Write-Host "Downloading MongoDB..."
 $webClient = New-Object System.Net.WebClient

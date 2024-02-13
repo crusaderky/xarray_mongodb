@@ -6,7 +6,7 @@ Installation
 Required dependencies
 ---------------------
 - Python 3.9 or later
-- MongoDB 4.4 or later
+- MongoDB 3.6 or later
 - `xarray <http://xarray.pydata.org>`_
 - `dask <https://dask.org/>`_
 - `PyMongo <https://pymongo.readthedocs.io/en/stable/>`_
