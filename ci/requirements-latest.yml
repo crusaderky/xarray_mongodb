@@ -4,10 +4,7 @@ channels:
 dependencies:
   # Core dependencies
   - dask
-  - numpy
-  - pandas
   - pymongo
-  - toolz
   - xarray
 
   # Optional dependencies

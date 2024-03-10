@@ -1,0 +1,28 @@
+name: xarray_mongodb
+channels:
+  - conda-forge
+dependencies:
+  # Core dependencies
+  - dask
+  - numpy
+  - pandas
+  - pyarrow  # Core dependency of pandas 3
+  - pymongo
+  - xarray
+
+  # Optional dependencies
+  - motor
+  - pint
+  # - sparse  # numba does not support numpy 2.0
+
+  # Test tools
+  - pytest
+  - pytest-asyncio
+  - pytest-cov
+
+  - pip
+  - pip:
+      - git+https://github.com/dask/dask
+      - git+https://github.com/dask/distributed
+      - git+https://github.com/pydata/xarray
+      # numpy amd pandas are upgraded to nightly builds by pytest.yml
