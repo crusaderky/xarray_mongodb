@@ -73,8 +73,6 @@ testpaths = ["xarray_mongodb/tests"]
 asyncio_mode = "auto"
 filterwarnings = [
     "error",
-    # Raised internally by pandas
-    'ignore:datetime.datetime.utcfromtimestamp\(\) is deprecated:DeprecationWarning',
     # FIXME
     'ignore::pytest.PytestUnraisableExceptionWarning',
 ]
