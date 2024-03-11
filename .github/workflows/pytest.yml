@@ -80,7 +80,7 @@ jobs:
 
           # Test on nightly builds of requirements
           - name: upstream
-            os: ubuntu
+            os: ubuntu-latest
             python-version: '3.12'
             mongodb-version: '7.0'
 
