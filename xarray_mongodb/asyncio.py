@@ -72,7 +72,7 @@ class XarrayMongoDBAsyncIO(XarrayMongoDBCommon):
     # This method is just for overriding the typing annotation of database
     def __init__(
         self,
-        database: motor.motor_asyncio.AsyncIOMotorDatabase,  # type: ignore[valid-type]
+        database: motor.motor_asyncio.AsyncIOMotorDatabase,
         collection: str = "xarray",
         *,
         chunk_size_bytes: int = CHUNK_SIZE_BYTES_DEFAULT,
