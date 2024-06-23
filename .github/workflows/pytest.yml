@@ -32,11 +32,11 @@ jobs:
         include:
           # Test latest on MacOSX
           - name: latest
-            os: macos-14
+            os: macos-latest
             python-version: '3.9'
             mongodb-version: '4.4'
           - name: latest
-            os: macos-14
+            os: macos-latest
             python-version: '3.12'
             mongodb-version: '7.0'
 
@@ -57,7 +57,7 @@ jobs:
             python-version: '3.9'
             mongodb-version: '3.6'
           - name: min-no-optionals
-            os: macos-14
+            os: macos-latest
             python-version: '3.9'
             mongodb-version: '4.4'
           - name: min-no-optionals
@@ -71,7 +71,7 @@ jobs:
             python-version: '3.9'
             mongodb-version: '3.6'
           - name: min-all-deps
-            os: macos-14
+            os: macos-latest
             python-version: '3.9'
             mongodb-version: '4.4'
           - name: min-all-deps
@@ -96,7 +96,7 @@ jobs:
           mongodb-version: ${{ matrix.mongodb-version }}
 
       - name: Start MongoDB on MacOS
-        if: matrix.os == 'macos-14'
+        if: matrix.os == 'macos-latest'
         run: |
           brew tap mongodb/brew
           brew install mongodb-community@${{ matrix.mongodb-version }}
