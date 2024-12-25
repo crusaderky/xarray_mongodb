@@ -7,7 +7,7 @@ MongoDB. Its design is heavily influenced by
 `GridFS <https://docs.mongodb.com/manual/core/gridfs/>`_.
 
 
-Current Features
+Current features
 ----------------
 - Synchronous operations with
   `PyMongo <https://pymongo.readthedocs.io/en/stable/>`_
@@ -25,9 +25,9 @@ Current Features
   this allows writing clients in different languages.
 
 
-Upcoming Features
------------------
-- Sparse arrays with `Sparse <https://sparse.pydata.org/>`_
+Future features
+---------------
+- Sparse arrays with `PyData Sparse <https://sparse.pydata.org/>`_
 
 
 Limitations

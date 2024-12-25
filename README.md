@@ -10,7 +10,7 @@ Read the full documentation at https://xarray-mongodb.readthedocs.io/en/latest/
 xarray_mongodb allows storing xarray objects on MongoDB. Its design is heavily
 influenced by GridFS.
 
-## Current Features
+### Current features
 
 - Synchronous operations with PyMongo
 - asyncio support with Motor
@@ -21,7 +21,3 @@ influenced by GridFS.
 - Support for dask distributed
 - Data is stored on the database in a format that is agnostic to Python; this
   allows writing clients in different languages.
-
-## Upcoming Features
-
-- sparse arrays
