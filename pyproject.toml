@@ -16,6 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
 requires-python = ">=3.9"
@@ -40,12 +41,12 @@ content-type = "text/x-rst"
 [project.optional-dependencies]
 asyncio = ["motor >= 2.3"]
 pint = ["pint >= 0.18"]
-sparse = ["sparse >= 0.9"]
+# sparse = ["sparse >= 0.9"]
 testing = ["pytest", "pytest-asyncio"]
 complete = [
     "motor >= 2.3",
     "pint >= 0.18",
-    "sparse >= 0.9",
+    # "sparse >= 0.9",
 ]
 
 [tool.setuptools]

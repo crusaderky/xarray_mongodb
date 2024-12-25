@@ -28,7 +28,7 @@ jobs:
       matrix:
         os: [ubuntu]
         name: [latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         mongodb-version: ["3.6", "7.0"]
 
         include:
@@ -39,7 +39,7 @@ jobs:
             mongodb-version: "4.4"
           - name: latest
             os: macos
-            python-version: "3.12"
+            python-version: "3.13"
             mongodb-version: "7.0"
 
           # Test latest on Windows
@@ -51,7 +51,7 @@ jobs:
           #   mongodb-version: "3.6"
           # - name: latest
           #   os: windows
-          #   python-version: "3.12"
+          #   python-version: "3.13"
           #   mongodb-version: "3.6"
 
           # Test minimum dependencies, no optionals
@@ -89,7 +89,7 @@ jobs:
           # Test on nightly builds of requirements
           - name: upstream
             os: ubuntu
-            python-version: "3.12"
+            python-version: "3.13"
             mongodb-version: "7.0"
 
     steps:
