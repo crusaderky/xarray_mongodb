@@ -7,14 +7,14 @@ What's New
 
 v0.3.0 (unreleased)
 ===================
-- Added support for Python 3.9 to 3.12
+- Added support for Python 3.9 to 3.13
 - Added support for MongoDB 5.0
 - Added support for recent versions of all dependencies
 - Increased all minimum dependencies:
 
-  ========== ===== =====
+  ========== ===== =======
   Dependency 0.2.1 0.3.0
-  ========== ===== =====
+  ========== ===== =======
   MongoDB    3.6   3.6
   Python     3.6   3.9
   numpy      1.15  1.19
@@ -23,8 +23,8 @@ v0.3.0 (unreleased)
   pymongo    3.7   3.11
   motor      2.0   2.3
   pint       0.10  0.18
-  sparse     0.9   0.9
-  ========== ===== =====
+  sparse     0.9   removed
+  ========== ===== =======
 
 
 .. _whats-new.0.2.1:

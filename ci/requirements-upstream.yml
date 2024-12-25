@@ -13,7 +13,7 @@ dependencies:
   # Optional dependencies
   - motor
   - pint
-  # - sparse  # numba does not support numpy 2.0
+  # - sparse
 
   # Test tools
   - pytest
