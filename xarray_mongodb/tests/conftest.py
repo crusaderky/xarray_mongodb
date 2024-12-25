@@ -1,5 +1,4 @@
-"""pytest fixtures
-"""
+"""pytest fixtures"""
 
 import pymongo
 import pytest
@@ -7,7 +6,7 @@ import pytest
 from xarray_mongodb import XarrayMongoDB, XarrayMongoDBAsyncIO
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def sync_db():
     client = pymongo.MongoClient()
     dbname = "test_xarray_mongodb"
@@ -15,12 +14,12 @@ def sync_db():
     client.drop_database(dbname)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def sync_xdb(sync_db):
     return XarrayMongoDB(sync_db, embed_threshold_bytes=0)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def async_db():
     import motor.motor_asyncio
 
@@ -30,6 +29,6 @@ async def async_db():
     await client.drop_database(dbname)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def async_xdb(async_db):
     return XarrayMongoDBAsyncIO(async_db, embed_threshold_bytes=0)

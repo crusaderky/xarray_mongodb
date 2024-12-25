@@ -1,5 +1,5 @@
-"""Shared code between :class:`XarrayMongoDB` and :class:`XarrayMongoDBAsyncIO`
-"""
+"""Shared code between :class:`XarrayMongoDB` and :class:`XarrayMongoDBAsyncIO`"""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -22,6 +22,8 @@ from xarray_mongodb import chunk
 from xarray_mongodb.compat import Quantity, UnitRegistry
 
 if TYPE_CHECKING:
+    import pint  # optional dependency
+
     # TODO remove TYPE_CHECKING (requires dask >= 2023.9.1)
     from dask.typing import Graph
 
@@ -30,7 +32,7 @@ CHUNK_SIZE_BYTES_DEFAULT = 255 * 1024
 EMBED_THRESHOLD_BYTES_DEFAULT = 255 * 1024
 
 
-@dask.base.normalize_token.register(pymongo.collection.Collection)  # type: ignore
+@dask.base.normalize_token.register(pymongo.collection.Collection)  # type: ignore[misc]
 def _(obj: pymongo.collection.Collection) -> object:
     """Single-dispatch function.
     Make pymongo collections tokenizable with dask.
@@ -318,9 +320,9 @@ class XarrayMongoDBCommon:
         chunks.sort(key=lambda doc: (doc["name"], doc["chunk"], doc["n"]))
 
         # Convert list of docs into {var name: {chunk id: ndarray|COO|Quantity}}
-        variables: defaultdict[
-            str, dict[tuple[int, ...] | None, np.ndarray]
-        ] = defaultdict(dict)
+        variables: defaultdict[str, dict[tuple[int, ...] | None, np.ndarray]] = (
+            defaultdict(dict)
+        )
 
         for (var_name, chunk_id), docs in groupby(
             chunks, lambda doc: (doc["name"], doc["chunk"])
@@ -335,7 +337,7 @@ class XarrayMongoDBCommon:
 
         def build_variables(where: str) -> Iterator[tuple[str, xarray.Variable]]:
             for var_name, var_meta in meta[where].items():
-                array: np.ndarray | dask.array.Array
+                array: np.ndarray | dask.array.Array | pint.Quantity
                 if "data" in var_meta:
                     # Embedded variable
                     assert var_name not in variables
@@ -351,10 +353,13 @@ class XarrayMongoDBCommon:
 
                 if "units" in var_meta:
                     # wrap numpy/dask array with pint
-                    array = self.ureg.Quantity(array, var_meta["units"])  # type: ignore
+                    array = self.ureg.Quantity(array, var_meta["units"])
 
-                yield var_name, xarray.Variable(
-                    var_meta["dims"], array, attrs=var_meta.get("attrs")
+                yield (
+                    var_name,
+                    xarray.Variable(
+                        var_meta["dims"], array, attrs=var_meta.get("attrs")
+                    ),
                 )
 
         ds = xarray.Dataset(
@@ -485,4 +490,3 @@ def collect(*futures: object) -> None:
     """Dummy node in the dask graph whose only purpose is to collect a bunch of other
     nodes
     """
-    pass

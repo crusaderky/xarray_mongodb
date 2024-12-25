@@ -1,5 +1,5 @@
-"""asyncio driver based on Motor
-"""
+"""asyncio driver based on Motor"""
+
 from __future__ import annotations
 
 import asyncio
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 
 def _create_index(
-    func: Callable[Concatenate[XarrayMongoDBAsyncIO, P], Awaitable[T]]
+    func: Callable[Concatenate[XarrayMongoDBAsyncIO, P], Awaitable[T]],
 ) -> Callable[Concatenate[XarrayMongoDBAsyncIO, P], Awaitable[T]]:
     """Asynchronous decorator function that create the index on the 'chunk' collection
     on the first get() or put()

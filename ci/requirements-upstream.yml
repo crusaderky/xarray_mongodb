@@ -6,7 +6,7 @@ dependencies:
   - dask
   - numpy
   - pandas
-  - pyarrow  # Core dependency of pandas 3
+  - pyarrow # Core dependency of pandas 3
   - pymongo
   - xarray
 

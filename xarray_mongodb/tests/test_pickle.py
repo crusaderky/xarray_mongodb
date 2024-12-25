@@ -6,6 +6,7 @@ interpreter BEFORE unpickling the pymongo.MongoClient object. This is achieved b
 having a function defined by xarray_mongodb before the pymongo.MongoClient object in the
 tuples that constitute the dask graph.
 """
+
 import multiprocessing
 
 import xarray

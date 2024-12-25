@@ -21,8 +21,8 @@ if has_motor:
     from xarray_mongodb.asyncio import XarrayMongoDBAsyncIO
 else:
 
-    class XarrayMongoDBAsyncIO:  # type: ignore
-        def __new__(cls, *args: Any, **kwargs: Any) -> Any:
+    class XarrayMongoDBAsyncIO:  # type: ignore[no-redef]
+        def __new__(cls, *args: Any, **kwargs: Any) -> Any:  # noqa: ARG003
             raise ImportError("XarrayMongoDBAsyncIO requires motor >=2.3")
 
 
@@ -34,8 +34,8 @@ XarrayMongoDB.__module__ = "xarray_mongodb"
 XarrayMongoDBAsyncIO.__module__ = "xarray_mongodb"
 
 __all__ = (
-    "__version__",
     "DocumentNotFoundError",
     "XarrayMongoDB",
     "XarrayMongoDBAsyncIO",
+    "__version__",
 )

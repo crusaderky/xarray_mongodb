@@ -2,12 +2,13 @@
 
 Please read :doc:`nep18`.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
 
-__all__ = ("has_motor", "COO", "Quantity", "Unit", "UnitRegistry")
+__all__ = ("COO", "Quantity", "Unit", "UnitRegistry", "has_motor")
 
 
 try:
@@ -27,7 +28,7 @@ except ImportError:
     # always returns False. Can't just use `COO = object()` because things like
     # Optional[COO] don't like it.
 
-    class COO:  # type: ignore
+    class COO:  # type: ignore[no-redef]
         pass
 
 
@@ -37,17 +38,17 @@ try:
 
 except ImportError:
 
-    class Unit:  # type: ignore
+    class Unit:  # type: ignore[no-redef]
         def __init__(self, s: str):
             raise NotImplementedError("STUB")
 
-    class Quantity:  # type: ignore
+    class Quantity:  # type: ignore[no-redef]
         magnitude: Any
         units: Unit
 
         def __init__(self, magnitude: Any, units: str | None = None):
             raise NotImplementedError("STUB")
 
-    class UnitRegistry:  # type: ignore
+    class UnitRegistry:  # type: ignore[no-redef]
         Quantity: Callable[..., Quantity]
         Unit: Callable[..., Unit]
