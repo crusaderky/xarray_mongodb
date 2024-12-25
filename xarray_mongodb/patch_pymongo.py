@@ -1,5 +1,5 @@
-"""Patch pymongo objects to make them serializable
-"""
+"""Patch pymongo objects to make them serializable"""
+
 from __future__ import annotations
 
 import pymongo

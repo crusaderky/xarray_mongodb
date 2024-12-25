@@ -1,5 +1,5 @@
-"""All subclasses of Exception of the package
-"""
+"""All subclasses of Exception of the package"""
+
 from __future__ import annotations
 
 

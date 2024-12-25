@@ -1,7 +1,7 @@
-"""Shared test data between test_sync and test_async
-"""
+"""Shared test data between test_sync and test_async"""
+
 import dask.array
-import numpy
+import numpy as np
 import pytest
 import xarray
 
@@ -195,7 +195,7 @@ def expect_ds_chunks(_id):
 
 
 da = xarray.DataArray(
-    numpy.array([1], dtype="i1"), dims=["x"], coords={"x": ["x1"]}, attrs={"foo": 1}
+    np.array([1], dtype="i1"), dims=["x"], coords={"x": ["x1"]}, attrs={"foo": 1}
 )
 
 

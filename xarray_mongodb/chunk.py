@@ -3,6 +3,7 @@
 - loading/writing a numpy.ndarray on MongoDB
 - converting between MongoDB documnents and numpy.ndarray
 """
+
 from __future__ import annotations
 
 import numpy as np

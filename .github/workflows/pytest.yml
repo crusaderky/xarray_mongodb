@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: ['*']
+    branches: ["*"]
   workflow_dispatch: # allows you to trigger manually
 
 # When this workflow is queued, automatically cancel any previous running
@@ -19,71 +19,78 @@ defaults:
 
 jobs:
   build:
-    name: ${{ matrix.os }} ${{ matrix.name }} py${{ matrix.python-version }} / MongoDB ${{ matrix.mongodb-version }}
+    name:
+      ${{ matrix.os }} ${{ matrix.name }} py${{ matrix.python-version }} /
+      MongoDB ${{ matrix.mongodb-version }}
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu]
         name: [latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        mongodb-version: ['3.6', '7.0']
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        mongodb-version: ["3.6", "7.0"]
 
         include:
           # Test latest on MacOSX
           - name: latest
             os: macos
-            python-version: '3.9'
-            mongodb-version: '4.4'
+            python-version: "3.9"
+            mongodb-version: "4.4"
           - name: latest
             os: macos
-            python-version: '3.12'
-            mongodb-version: '7.0'
+            python-version: "3.12"
+            mongodb-version: "7.0"
 
           # Test latest on Windows
           # (mongodb version is hardcoded in install_mongodb.ps1)
-          - name: latest
-            os: windows
-            python-version: '3.9'
-            mongodb-version: '3.6'
-          - name: latest
-            os: windows
-            python-version: '3.12'
-            mongodb-version: '3.6'
+          # FIXME MongoDB install script is broken
+          # - name: latest
+          #   os: windows
+          #   python-version: "3.9"
+          #   mongodb-version: "3.6"
+          # - name: latest
+          #   os: windows
+          #   python-version: "3.12"
+          #   mongodb-version: "3.6"
 
           # Test minimum dependencies, no optionals
           - name: min-no-optionals
             os: ubuntu
-            python-version: '3.9'
-            mongodb-version: '3.6'
+            python-version: "3.9"
+            mongodb-version: "3.6"
           - name: min-no-optionals
             os: macos
-            python-version: '3.9'
-            mongodb-version: '4.4'
-          - name: min-no-optionals
-            os: windows
-            python-version: '3.9'
-            mongodb-version: '3.6'
+            python-version: "3.9"
+            mongodb-version: "4.4"
+
+          # FIXME MongoDB install script is broken
+          # - name: min-no-optionals
+          #   os: windows
+          #   python-version: "3.9"
+          #   mongodb-version: "3.6"
 
           # Test minimum dependencies, all optionals
           - name: min-all-deps
             os: ubuntu
-            python-version: '3.9'
-            mongodb-version: '3.6'
+            python-version: "3.9"
+            mongodb-version: "3.6"
           - name: min-all-deps
             os: macos
-            python-version: '3.9'
-            mongodb-version: '4.4'
-          - name: min-all-deps
-            os: windows
-            python-version: '3.9'
-            mongodb-version: '3.6'
+            python-version: "3.9"
+            mongodb-version: "4.4"
+
+          # FIXME MongoDB install script is broken
+          # - name: min-all-deps
+          #   os: windows
+          #   python-version: "3.9"
+          #   mongodb-version: "3.6"
 
           # Test on nightly builds of requirements
           - name: upstream
             os: ubuntu
-            python-version: '3.12'
-            mongodb-version: '7.0'
+            python-version: "3.12"
+            mongodb-version: "7.0"
 
     steps:
       - name: Checkout
@@ -110,7 +117,6 @@ jobs:
       - name: Setup Conda Environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
           miniforge-version: latest
           use-mamba: true
           python-version: ${{ matrix.python-version }}
@@ -122,7 +128,7 @@ jobs:
         run: |
           # Pick up https://github.com/mamba-org/mamba/pull/2903
           mamba install -n base 'mamba>=1.5.2'
-      
+
           python -m pip install --no-deps --pre \
               -i https://pypi.anaconda.org/scientific-python-nightly-wheels/simple \
               numpy pandas

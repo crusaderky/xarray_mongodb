@@ -173,7 +173,7 @@ def test_no_segments_found(sync_xdb):
 # 'ValueError: buffer size must be a multiple of element size'.
 # A missing chunk with chunk_size_bytes=8 causes ndarray.reshape to crash with
 # 'ValueError: cannot reshape array of size 1 into shape (1,2)'.
-@pytest.mark.parametrize("chunk_size_bytes", (2, 8))
+@pytest.mark.parametrize("chunk_size_bytes", [2, 8])
 def test_some_segments_not_found(sync_xdb, chunk_size_bytes):
     sync_xdb.chunk_size_bytes = chunk_size_bytes
     _id, future = sync_xdb.put(ds)

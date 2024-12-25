@@ -1,5 +1,5 @@
-"""synchronous driver based on PyMongo
-"""
+"""synchronous driver based on PyMongo"""
+
 from __future__ import annotations
 
 from collections.abc import Collection
