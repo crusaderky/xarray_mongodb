@@ -66,5 +66,4 @@ repos:
           - pandas-stubs
           - pint
           - pymongo
-          - sparse
           - xarray

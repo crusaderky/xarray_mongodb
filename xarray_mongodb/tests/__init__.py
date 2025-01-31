@@ -47,7 +47,6 @@ def _import_or_skip(*args):
 
 has_motor, requires_motor = _import_or_skip(("motor", "2.3"))
 has_pint, requires_pint = _import_or_skip(("pint", "0.18"))
-has_sparse, requires_sparse = _import_or_skip(("sparse", "0.9"))
 
 
 def assert_chunks_index(indices: list) -> None:
