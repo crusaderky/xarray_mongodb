@@ -16,7 +16,6 @@ dependencies:
   # Optional dependencies
   - motor=2.3
   - pint=0.18
-  # - sparse=0.9
 
   # Test tools
   - pytest

@@ -10,7 +10,6 @@ dependencies:
   # Optional dependencies
   - motor
   - pint
-  # - sparse
 
   # Test tools
   - pytest

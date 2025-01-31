@@ -14,5 +14,4 @@ dependencies:
   - motor
   - pint
   - pymongo
-  - sparse
   - xarray
