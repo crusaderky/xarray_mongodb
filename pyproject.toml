@@ -141,6 +141,7 @@ select = [
   "PL",   # pylint
   "UP",   # pyupgrade
   "RUF",  # unused-noqa
+  "TID",  # ruff tidy-up
   "EXE001",  #  Shebang is present but file is not executable
 ]
 
