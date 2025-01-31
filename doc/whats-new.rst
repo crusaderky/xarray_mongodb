@@ -15,7 +15,7 @@ v0.3.0 (unreleased)
   ========== ===== =======
   Dependency 0.2.1 0.3.0
   ========== ===== =======
-  MongoDB    3.6   3.6
+  MongoDB    3.6   4.0
   Python     3.6   3.9
   numpy      1.15  1.19
   pandas     0.24  1.1
