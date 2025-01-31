@@ -7,8 +7,8 @@ What's New
 
 v0.3.0 (unreleased)
 ===================
-- Added support for Python 3.9 to 3.13
-- Added support for MongoDB 5.0
+- Added support for Python 3.9 ~ 3.13
+- Added support for MongoDB 5.0 ~ 8.0
 - Added support for recent versions of all dependencies
 - Increased all minimum dependencies:
 
@@ -18,6 +18,7 @@ v0.3.0 (unreleased)
   MongoDB    3.6   4.0
   Python     3.6   3.9
   numpy      1.15  1.19
+  dask       1.2   2.24
   pandas     0.24  1.1
   xarray     0.13  0.16
   pymongo    3.7   3.11
