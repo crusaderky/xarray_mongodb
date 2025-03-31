@@ -5,7 +5,7 @@ What's New
 
 .. _whats-new.0.3.0:
 
-v0.3.0 (2024-01-31)
+v0.3.0 (2025-01-31)
 ===================
 - Added support for Python 3.9 ~ 3.13
 - Added support for MongoDB 5.0 ~ 8.0
